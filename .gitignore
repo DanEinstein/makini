@@ -42,3 +42,25 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+
+# Sensitive local configuration
+.env
+.env.*
+!.env.example
+!.env.template
+
+# Local AI/runtime secrets
+secrets/
+credentials/
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+id_rsa
+id_rsa.pub
+
+# Service/account credentials
+*credentials*.json
+*service-account*.json
+*secret*.json

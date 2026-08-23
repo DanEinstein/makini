@@ -2,6 +2,46 @@
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.1.4.
 
+## Local AI Runtime (Gemma via Ollama)
+
+Makini's AI Tutor now uses a self-hosted Gemma model through Ollama. User API keys are not required.
+
+### 1) Start Ollama
+
+```bash
+ollama serve
+```
+
+### 2) Pull the model
+
+```bash
+ollama pull gemma3:4b
+```
+
+### 3) Optional runtime environment variables
+
+Makini server defaults:
+- `OLLAMA_BASE_URL=http://127.0.0.1:11434`
+- `OLLAMA_MODEL=gemma3:4b`
+
+You can override them when starting the app:
+
+```bash
+OLLAMA_BASE_URL=http://127.0.0.1:11434 OLLAMA_MODEL=gemma3:4b npm start
+```
+
+### 4) Health check endpoint
+
+The app exposes:
+- `GET /api/ai/health` to verify Ollama connectivity
+- `POST /api/ai/chat` for AI Tutor completions
+
+### Troubleshooting
+
+- If status shows **Offline**, ensure `ollama serve` is running.
+- If chat fails, run `ollama list` and confirm `gemma3:4b` exists.
+- If Ollama starts after the app, refresh or restart the app server.
+
 ## Development server
 
 To start a local development server, run:

@@ -1,1 +1,365 @@
-/* You can add global styles to this file, and also import other style files */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --pastel-petal: #eabfcbff;
+  --old-rose: #c191a1ff;
+  --berry-blush: #a4508bff;
+  --indigo: #5f0a87ff;
+  --dark-amethyst: #2f004fff;
+
+  --app-bg: #f9f1f5;
+  --app-bg-soft: #f3e5eb;
+  --app-surface: #fffafb;
+  --app-surface-soft: #f8edf2;
+  --app-text: var(--dark-amethyst);
+  --app-text-muted: #52236e;
+
+  --app-primary: var(--berry-blush);
+  --app-primary-strong: var(--indigo);
+  --app-primary-light: #efd5e1;
+  --app-warning: var(--old-rose);
+  --app-success: var(--indigo);
+  --app-border: #d8b2c2;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  background: radial-gradient(1200px circle at 0% 0%, #f2dbe4 0%, var(--app-bg) 45%, #f8edf2 100%);
+  color: var(--app-text);
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  line-height: 1.45;
+  overflow-x: hidden;
+}
+
+/* Material Symbols configuration */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+.material-symbols-outlined.fill-1 {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* Gradients for Study & Mastery */
+.gradient-text-tri {
+  background: linear-gradient(135deg, var(--berry-blush) 0%, var(--indigo) 60%, var(--dark-amethyst) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gradient-text-blue-green {
+  background: linear-gradient(135deg, var(--berry-blush) 0%, var(--indigo) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gradient-text-orange-green {
+  background: linear-gradient(135deg, var(--old-rose) 0%, var(--indigo) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gradient-border-glow {
+  position: relative;
+}
+.gradient-border-glow::before {
+  content: '';
+  position: absolute;
+  inset: -1.5px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(164, 80, 139, 0.5), rgba(193, 145, 161, 0.4), rgba(95, 10, 135, 0.5));
+  z-index: -1;
+  opacity: 0.7;
+  transition: opacity 0.3s ease;
+}
+.gradient-border-glow:hover::before {
+  opacity: 1;
+}
+
+/* Glassmorphism utility with sharp contrast */
+.glass-panel {
+  background-color: rgba(255, 255, 255, 0.94);
+  border: 1px solid var(--app-border);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+}
+
+.glass-card {
+  background-color: rgba(255, 255, 255, 0.97);
+  border: 1px solid var(--app-border);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+/* Custom Focus Ring */
+.focus-ring {
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.focus-ring:focus-within, .focus-ring:focus {
+  outline: none;
+  border-color: var(--app-primary) !important;
+  box-shadow: 0 0 0 3px rgba(164, 80, 139, 0.22);
+}
+
+/* App style reset for existing Tailwind semantic token classes */
+.bg-background { background-color: var(--app-bg) !important; }
+.text-on-background { color: var(--app-text) !important; }
+.bg-surface { background-color: var(--app-surface) !important; }
+.bg-surface\/80 { background-color: rgba(255, 250, 251, 0.9) !important; }
+.bg-surface-container { background-color: var(--app-surface-soft) !important; }
+.bg-surface-container-high { background-color: #f3e7ec !important; }
+.bg-surface-container-highest { background-color: #eed8e2 !important; }
+.bg-surface-container-low { background-color: #fff8fa !important; }
+.bg-surface-dim { background-color: #f3e8ee !important; }
+
+.text-on-surface { color: var(--dark-amethyst) !important; }
+.text-on-surface-variant { color: var(--app-text-muted) !important; }
+.text-primary { color: var(--app-primary) !important; }
+.bg-primary { background-color: var(--app-primary) !important; }
+.bg-primary-container { background-color: #f0dce6 !important; }
+.text-on-primary { color: #ffffff !important; }
+.text-on-primary-container { color: var(--dark-amethyst) !important; }
+.hover\:bg-primary-fixed-dim:hover { background-color: var(--app-primary-strong) !important; }
+.text-secondary { color: var(--app-success) !important; }
+.bg-secondary { background-color: var(--app-success) !important; }
+
+.border-outline-variant { border-color: var(--app-border) !important; }
+.border-surface-variant { border-color: var(--app-border) !important; }
+
+/* Layout polish */
+.rounded-xl { border-radius: 16px !important; }
+.rounded-lg { border-radius: 12px !important; }
+
+/* Button polish for app feel */
+button,
+[type="button"],
+[type="submit"] {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f3e8ee;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #b98aa0;
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9f6285;
+}
+
+/* Chart line animation */
+.chart-line {
+  stroke-dasharray: 400;
+  stroke-dashoffset: 400;
+  animation: drawLine 1.8s ease-out forwards;
+}
+
+@keyframes drawLine {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* SCROLL REVEAL ANIMATIONS */
+.reveal-on-scroll {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1), transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.reveal-on-scroll.is-revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.reveal-fade-in {
+  opacity: 0;
+  transition: opacity 0.8s ease-out;
+}
+.reveal-fade-in.is-revealed {
+  opacity: 1;
+}
+
+.reveal-scale-up {
+  opacity: 0;
+  transform: scale(0.94);
+  transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1), transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.reveal-scale-up.is-revealed {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Stagger Delays */
+.delay-75 { transition-delay: 75ms; }
+.delay-150 { transition-delay: 150ms; }
+.delay-225 { transition-delay: 225ms; }
+.delay-300 { transition-delay: 300ms; }
+.delay-375 { transition-delay: 375ms; }
+.delay-450 { transition-delay: 450ms; }
+
+/* Character & Cartoon Animations */
+@keyframes float-slow {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(1.5deg);
+  }
+}
+
+@keyframes float-reverse {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(8px) rotate(-1.5deg);
+  }
+}
+
+@keyframes float-gentle {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes orbit-bob {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  33% {
+    transform: translate(4px, -6px) scale(1.02);
+  }
+  66% {
+    transform: translate(-3px, 4px) scale(0.98);
+  }
+  100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(164, 80, 139, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 25px 8px rgba(95, 10, 135, 0.25);
+  }
+}
+
+@keyframes star-spin {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.15);
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+  }
+}
+
+@keyframes shimmer-sweep {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-float-slow {
+  animation: float-slow 4s ease-in-out infinite;
+}
+
+.animate-float-reverse {
+  animation: float-reverse 4.5s ease-in-out infinite;
+}
+
+.animate-float-gentle {
+  animation: float-gentle 3.2s ease-in-out infinite;
+}
+
+.animate-orbit-1 {
+  animation: orbit-bob 6s ease-in-out infinite;
+}
+
+.animate-orbit-2 {
+  animation: orbit-bob 7.5s ease-in-out infinite 1s;
+}
+
+.animate-orbit-3 {
+  animation: orbit-bob 5.5s ease-in-out infinite 2s;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+.animate-star {
+  animation: star-spin 8s linear infinite;
+}
+
+/* Accessibility: Respect prefers-reduced-motion for all transitions and animations */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .reveal-on-scroll,
+  .reveal-fade-in,
+  .reveal-scale-up {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .chart-line,
+  .animate-float-slow,
+  .animate-float-reverse,
+  .animate-float-gentle,
+  .animate-orbit-1,
+  .animate-orbit-2,
+  .animate-orbit-3,
+  .animate-pulse-glow,
+  .animate-star {
+    animation: none !important;
+    transform: none !important;
+  }
+}
