@@ -1,6 +1,58 @@
 # Makini
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.1.4.
+Focus-first learning platform: lock AI away during a study session, write a
+self-explanation, then unlock guided AI feedback. Angular 22 with SSR and an
+Express API in `src/server.ts`.
+
+## Credentials
+
+All configuration lives in a single `.env` file at the project root:
+
+```bash
+cp .env.example .env
+```
+
+`.env.example` documents every variable. The server loads it automatically in
+both `ng serve` and the built SSR server. On Render, set these in the service's
+Environment tab instead of committing a file.
+
+### Required now
+
+| Variable | Where to get it |
+| --- | --- |
+| `CLERK_PUBLISHABLE_KEY` | [Clerk dashboard](https://dashboard.clerk.com) → API Keys |
+| `CLERK_SECRET_KEY` | Same page. Server-side only — never commit it |
+
+Create a Clerk application, then add `http://localhost:4200` (and your Render
+URL for production) to its allowed origins. Use `pk_test_`/`sk_test_` keys
+locally and `pk_live_`/`sk_live_` in production.
+
+The publishable key is served to the browser at runtime via `GET /api/config`,
+so changing Clerk instances does not require a rebuild. Until both keys are set,
+every `/api` route returns `503` and the console prints a warning — pages still
+render.
+
+### Not needed yet
+
+`DATABASE_URL` and `CLERK_WEBHOOK_SECRET` (Postgres), `GROQ_API_KEY`
+(replaces Ollama), and `ELEVENLABS_API_KEY` (spoken reflections) are commented
+out in `.env.example` and land in later phases.
+
+## Authentication
+
+Auth is handled by [Clerk](https://clerk.com) through the community
+[`ngx-clerk`](https://github.com/anagstef/ngx-clerk) SDK on the frontend and
+`@clerk/express` on the server.
+
+Because `ngx-clerk` is client-side only, every authenticated route renders in the
+browser (`RenderMode.Client` in `src/app/app.routes.server.ts`); only the public
+landing page is prerendered. `provideClerk()` is registered in `src/main.ts`
+rather than the shared app config so ClerkJS never reaches the server bundle.
+
+Sign-in and sign-up live at `/sign-in` and `/sign-up` using catch-all route
+matchers so Clerk can handle its own sub-routes. Browser requests to `/api/*`
+carry the Clerk session JWT via an HTTP interceptor, and the server rejects
+unauthenticated calls with a `401`.
 
 ## Local AI Runtime (Gemma via Ollama)
 
@@ -35,6 +87,8 @@ OLLAMA_BASE_URL=http://127.0.0.1:11434 OLLAMA_MODEL=gemma3:4b npm start
 The app exposes:
 - `GET /api/ai/health` to verify Ollama connectivity
 - `POST /api/ai/chat` for AI Tutor completions
+
+Both require a signed-in user. `GET /api/config` is the only public endpoint.
 
 ### Troubleshooting
 

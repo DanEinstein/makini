@@ -48,6 +48,7 @@ Thumbs.db
 .env.*
 !.env.example
 !.env.template
+.env.example
 
 # Local AI/runtime secrets
 secrets/

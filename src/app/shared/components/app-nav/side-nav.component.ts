@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
-import { AuthService } from '../../../core/services/auth.service';
+import { ClerkService } from 'ngx-clerk';
 import { SessionService } from '../../../core/services/session.service';
 
 @Component({
@@ -77,7 +77,7 @@ import { SessionService } from '../../../core/services/session.service';
   `
 })
 export class SideNavComponent {
-  private authService = inject(AuthService);
+  private clerk = inject(ClerkService);
   private sessionService = inject(SessionService);
   private router = inject(Router);
 
@@ -98,8 +98,7 @@ export class SideNavComponent {
 
   signOut(): void {
     if (confirm('Are you sure you want to sign out?')) {
-      this.authService.logout();
-      this.router.navigate(['/auth/login']);
+      void this.clerk.signOut({ redirectUrl: '/' });
     }
   }
 }
