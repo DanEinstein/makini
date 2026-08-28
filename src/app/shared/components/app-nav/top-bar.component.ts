@@ -1,11 +1,12 @@
-import { Component, input, output, inject } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { AuthService } from '../../../core/services/auth.service';
+import { ClerkUserButtonComponent } from 'ngx-clerk';
+import { clerkAppearance } from '../../../core/clerk-appearance';
 
 @Component({
   selector: 'app-top-bar',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, ClerkUserButtonComponent],
   template: `
     <header class="fixed top-0 right-0 w-full md:w-[calc(100%-16rem)] bg-surface/95 backdrop-blur-md border-b border-outline-variant h-16 z-30 flex justify-between items-center px-4 md:px-margin-desktop shadow-sm">
       <!-- Title / Section Breadcrumb -->
@@ -49,12 +50,10 @@ import { AuthService } from '../../../core/services/auth.service';
           <span class="material-symbols-outlined text-[20px]">settings</span>
         </button>
 
-        <!-- User Profile Avatar -->
-        @if (authService.currentUser(); as user) {
-          <div class="w-8 h-8 rounded-full bg-surface-container-high border border-outline-variant overflow-hidden shrink-0 ml-1" [title]="user.name + ' (' + user.email + ')'">
-            <img [src]="user.avatarUrl" [alt]="user.name + ' avatar'" class="w-full h-full object-cover">
-          </div>
-        }
+        <!-- User Profile Menu -->
+        <div class="shrink-0 ml-1 flex items-center">
+          <clerk-user-button [props]="{ appearance: appearance }" />
+        </div>
       </div>
     </header>
   `
@@ -65,7 +64,7 @@ export class TopBarComponent {
   readonly aiRuntimeStatus = input<string>('');
   readonly openApiKeyModal = output<void>();
 
-  protected authService = inject(AuthService);
+  protected readonly appearance = clerkAppearance;
 
   onNotificationClick(): void {
     alert('No unread notifications. Keep up the deep focus flow!');

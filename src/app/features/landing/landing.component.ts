@@ -34,9 +34,14 @@ interface LearnerLevel {
             <a href="#spaces" class="px-3 py-2 rounded-lg hover:bg-primary-container hover:text-primary transition-colors">Study spaces</a>
           </nav>
 
-          <a routerLink="/auth/login" class="px-4 py-2 rounded-lg bg-primary text-on-primary text-sm font-bold hover:bg-primary-fixed-dim transition-colors">
-            Start
-          </a>
+          <div class="flex items-center gap-2">
+            <a routerLink="/sign-in" class="px-3 py-2 rounded-lg text-on-surface text-sm font-semibold hover:bg-primary-container hover:text-on-primary-container transition-colors">
+              Sign in
+            </a>
+            <a routerLink="/sign-up" class="px-4 py-2 rounded-lg bg-primary text-on-primary text-sm font-bold hover:bg-primary-fixed-dim transition-colors">
+              Start
+            </a>
+          </div>
         </div>
       </header>
 
@@ -53,7 +58,7 @@ interface LearnerLevel {
               Makini locks AI during your focus block, asks for a self-explanation, then unlocks guided AI feedback.
             </p>
             <div class="mt-6 flex flex-wrap gap-3">
-              <a routerLink="/auth/login" class="px-5 py-3 rounded-xl bg-primary text-on-primary text-sm font-bold hover:bg-primary-fixed-dim transition-colors">
+              <a routerLink="/sign-up" class="px-5 py-3 rounded-xl bg-primary text-on-primary text-sm font-bold hover:bg-primary-fixed-dim transition-colors">
                 Start session
               </a>
               <a href="#how" class="px-5 py-3 rounded-xl border border-outline-variant bg-surface text-on-surface text-sm font-semibold hover:border-primary hover:text-primary transition-colors">

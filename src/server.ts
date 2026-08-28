@@ -1,19 +1,82 @@
+import 'dotenv/config';
 import {
   AngularNodeAppEngine,
   createNodeRequestHandler,
   isMainModule,
   writeResponseToNodeResponse,
 } from '@angular/ssr/node';
-import express from 'express';
+import { clerkMiddleware, getAuth } from '@clerk/express';
+import express, { type NextFunction, type Request, type Response } from 'express';
 import { join } from 'node:path';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 const OLLAMA_BASE_URL = process.env['OLLAMA_BASE_URL'] || 'http://127.0.0.1:11434';
 const OLLAMA_MODEL = process.env['OLLAMA_MODEL'] || 'gemma3:4b';
+const CLERK_PUBLISHABLE_KEY = process.env['CLERK_PUBLISHABLE_KEY'] || '';
+const CLERK_SECRET_KEY = process.env['CLERK_SECRET_KEY'] || '';
+/** Treats the placeholders shipped in .env.example as "not configured". */
+function isRealKey(value: string, prefix: string): boolean {
+  return value.startsWith(prefix) && !value.includes('replace_me');
+}
+
+const IS_CLERK_CONFIGURED =
+  isRealKey(CLERK_PUBLISHABLE_KEY, 'pk_') && isRealKey(CLERK_SECRET_KEY, 'sk_');
+
+if (!IS_CLERK_CONFIGURED) {
+  console.warn(
+    '[makini] CLERK_PUBLISHABLE_KEY and/or CLERK_SECRET_KEY are missing or still ' +
+      'placeholders, so /api will return 503. Copy .env.example to .env and paste ' +
+      'your real keys from https://dashboard.clerk.com, then restart.',
+  );
+}
 
 const app = express();
 const angularApp = new AngularNodeAppEngine();
 app.use(express.json({ limit: '1mb' }));
+
+/**
+ * Public runtime config consumed by the browser bootstrap before Angular starts.
+ * Only values that are safe to expose belong here.
+ */
+app.get('/api/config', (_req, res) => {
+  res.json({ clerkPublishableKey: CLERK_PUBLISHABLE_KEY });
+});
+
+/**
+ * Fail fast with a readable error rather than letting Clerk throw mid-request,
+ * which would surface as an HTML 500 with a stack trace.
+ */
+app.use('/api', (_req, res, next) => {
+  if (!IS_CLERK_CONFIGURED) {
+    res.status(503).json({
+      error: 'Authentication is not configured on the server.',
+      hint: 'Set CLERK_PUBLISHABLE_KEY and CLERK_SECRET_KEY, then restart.',
+    });
+    return;
+  }
+
+  next();
+});
+
+// Scoped to /api so a misconfigured Clerk key can never take down page rendering.
+app.use('/api', clerkMiddleware());
+
+/**
+ * Rejects unauthenticated API calls with a 401 instead of redirecting, which is
+ * what an XHR client needs. Registered after /api/config so that stays public.
+ */
+function requireApiAuth(req: Request, res: Response, next: NextFunction): void {
+  const { userId } = getAuth(req);
+
+  if (!userId) {
+    res.status(401).json({ error: 'Unauthorized. Sign in to continue.' });
+    return;
+  }
+
+  next();
+}
+
+app.use('/api', requireApiAuth);
 
 type OllamaChatRole = 'system' | 'user' | 'assistant';
 
@@ -154,6 +217,20 @@ app.post('/api/ai/chat', async (req, res) => {
       details: error instanceof Error ? error.message : 'Unknown runtime error',
     });
   }
+});
+
+/**
+ * Keeps API failures as JSON. Without this, Express' default handler renders an
+ * HTML page containing the stack trace and absolute file paths.
+ */
+app.use('/api', (err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  console.error('[makini] Unhandled API error:', err);
+
+  if (res.headersSent) {
+    return;
+  }
+
+  res.status(500).json({ error: 'Internal server error' });
 });
 
 /**
