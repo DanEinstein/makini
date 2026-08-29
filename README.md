@@ -22,21 +22,43 @@ Environment tab instead of committing a file.
 | --- | --- |
 | `CLERK_PUBLISHABLE_KEY` | [Clerk dashboard](https://dashboard.clerk.com) → API Keys |
 | `CLERK_SECRET_KEY` | Same page. Server-side only — never commit it |
+| `DATABASE_URL` | Render dashboard → your Postgres instance → **Connect** → **External** URL |
+| `GROQ_API_KEY` | [Groq console](https://console.groq.com/keys) — AI tutor |
+| `ELEVENLABS_API_KEY` | [ElevenLabs API keys](https://elevenlabs.io/app/settings/api-keys) — spoken reflections (optional) |
 
 Create a Clerk application, then add `http://localhost:4200` (and your Render
 URL for production) to its allowed origins. Use `pk_test_`/`sk_test_` keys
 locally and `pk_live_`/`sk_live_` in production.
 
 The publishable key is served to the browser at runtime via `GET /api/config`,
-so changing Clerk instances does not require a rebuild. Until both keys are set,
-every `/api` route returns `503` and the console prints a warning — pages still
-render.
+so changing Clerk instances does not require a rebuild. Until both Clerk keys
+are set, every `/api` route returns `503` and the console prints a warning —
+pages still render.
+
+Until `DATABASE_URL` is set, session and stats APIs return `503`. Clerk sign-in
+still works. Until `GROQ_API_KEY` is set, the AI tutor returns `503` and the
+runtime panel shows Offline. Spoken reflections need `ELEVENLABS_API_KEY`;
+typing a reflection still works without it.
+
+### Postgres (Render)
+
+1. In the [Render dashboard](https://dashboard.render.com), create a **PostgreSQL** database. The web service does not have to exist yet.
+2. Open the database → **Connect** → copy the **External Database URL** (the one that works from your laptop; it includes TLS).
+3. Paste it as `DATABASE_URL` in `.env`.
+4. Apply the schema from the `makini/` app directory:
+
+```bash
+npm run db:migrate
+```
+
+5. Restart `ng serve`.
+
+On Render later, point the **web service** at the **Internal** URL so traffic stays on Render's private network. Do not commit `.env`.
 
 ### Not needed yet
 
-`DATABASE_URL` and `CLERK_WEBHOOK_SECRET` (Postgres), `GROQ_API_KEY`
-(replaces Ollama), and `ELEVENLABS_API_KEY` (spoken reflections) are commented
-out in `.env.example` and land in later phases.
+None of the product phases require extra keys beyond Clerk, Postgres, Groq,
+and ElevenLabs. Spoken reflection is optional — typing still unlocks the tutor.
 
 ## Authentication
 
@@ -54,47 +76,49 @@ matchers so Clerk can handle its own sub-routes. Browser requests to `/api/*`
 carry the Clerk session JWT via an HTTP interceptor, and the server rejects
 unauthenticated calls with a `401`.
 
-## Local AI Runtime (Gemma via Ollama)
+## AI Tutor (Groq)
 
-Makini's AI Tutor now uses a self-hosted Gemma model through Ollama. User API keys are not required.
+The AI Tutor runs on Groq from the Express server. The browser never sees the
+key.
 
-### 1) Start Ollama
-
-```bash
-ollama serve
-```
-
-### 2) Pull the model
-
-```bash
-ollama pull gemma3:4b
-```
-
-### 3) Optional runtime environment variables
-
-Makini server defaults:
-- `OLLAMA_BASE_URL=http://127.0.0.1:11434`
-- `OLLAMA_MODEL=gemma3:4b`
-
-You can override them when starting the app:
-
-```bash
-OLLAMA_BASE_URL=http://127.0.0.1:11434 OLLAMA_MODEL=gemma3:4b npm start
-```
-
-### 4) Health check endpoint
+1. Create an API key at [console.groq.com/keys](https://console.groq.com/keys).
+2. Set `GROQ_API_KEY` in `.env`. Optionally override `GROQ_MODEL`
+   (default `llama-3.3-70b-versatile`).
+3. Restart `ng serve`.
 
 The app exposes:
-- `GET /api/ai/health` to verify Ollama connectivity
-- `POST /api/ai/chat` for AI Tutor completions
+- `GET /api/ai/health` to verify Groq connectivity (signed-in)
+- `POST /api/ai/chat` for streaming tutor completions (SSE)
 
-Both require a signed-in user. `GET /api/config` is the only public endpoint.
+Both require a signed-in user. `GET /api/config` and `GET /api/health` are the
+only public endpoints.
 
-### Troubleshooting
+If the runtime panel shows **Offline**, the Groq key is missing or rejected.
 
-- If status shows **Offline**, ensure `ollama serve` is running.
-- If chat fails, run `ollama list` and confirm `gemma3:4b` exists.
-- If Ollama starts after the app, refresh or restart the app server.
+## Spoken reflections (ElevenLabs Scribe)
+
+On the reflection screen, tap the mic to record. Audio is sent to
+`POST /api/reflections/transcribe`, transcribed with Scribe v2, and dropped
+into the textarea so you can edit before submitting. The audio is discarded;
+only the transcript is stored.
+
+Recordings are capped at 3 minutes per take and 10 minutes per user per day.
+
+## Render
+
+`render.yaml` is a Blueprint for one web service plus managed Postgres.
+
+1. Create the Postgres instance (or let the Blueprint create `makini-db`).
+2. Point Render at **this** app repo (`DanEinstein/makini`), root directory `.`.
+3. Paste `CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `GROQ_API_KEY`, and
+   `ELEVENLABS_API_KEY` in the Environment tab. `DATABASE_URL` is injected from
+   the database when using the Blueprint.
+4. The web service should use the **Internal** database URL. From your laptop,
+   use the **External** URL in `.env`.
+5. After deploy, add the Render URL to Clerk's allowed origins.
+
+`npm run db:migrate` runs during the build. The process health check is
+`GET /api/health`.
 
 ## Development server
 

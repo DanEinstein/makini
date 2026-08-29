@@ -2,9 +2,10 @@ import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { SessionService } from '../services/session.service';
 
-export const lockScreenGuard: CanActivateFn = () => {
+export const lockScreenGuard: CanActivateFn = async () => {
   const sessionService = inject(SessionService);
   const router = inject(Router);
+  await sessionService.whenReady();
   const session = sessionService.activeSession();
 
   if (!session) {
@@ -22,9 +23,10 @@ export const lockScreenGuard: CanActivateFn = () => {
   return true;
 };
 
-export const reflectionGuard: CanActivateFn = () => {
+export const reflectionGuard: CanActivateFn = async () => {
   const sessionService = inject(SessionService);
   const router = inject(Router);
+  await sessionService.whenReady();
   const session = sessionService.activeSession();
 
   if (!session) {
@@ -42,12 +44,12 @@ export const reflectionGuard: CanActivateFn = () => {
   return true;
 };
 
-export const aiPanelGuard: CanActivateFn = () => {
+export const aiPanelGuard: CanActivateFn = async () => {
   const sessionService = inject(SessionService);
   const router = inject(Router);
+  await sessionService.whenReady();
   const session = sessionService.activeSession();
 
-  // If there's an active session in lock or reflect status, strictly prevent access
   if (session?.status === 'locked') {
     return router.createUrlTree(['/session/lock']);
   }

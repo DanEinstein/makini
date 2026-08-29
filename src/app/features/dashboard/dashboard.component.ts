@@ -203,7 +203,7 @@ export class DashboardComponent {
   }
 
   reviewInAIWorkspace(session: Session): void {
-    this.sessionService.activeSession.set(session);
+    this.sessionService.reviewSession(session);
     this.router.navigate(['/session/ai-tutor']);
   }
 }

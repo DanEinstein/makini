@@ -1,30 +1,34 @@
-import { Injectable, signal, computed, PLATFORM_ID, inject, NgZone, OnDestroy } from '@angular/core';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { isPlatformBrowser } from '@angular/common';
+import {
+  Injectable,
+  NgZone,
+  OnDestroy,
+  PLATFORM_ID,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked
+} from '@angular/core';
+import { ClerkService } from 'ngx-clerk';
+import { firstValueFrom } from 'rxjs';
+import { DEFAULT_SOURCES } from '../../../shared/session-defaults';
 import { Session, SessionReflection, SourceLink } from '../models/session.model';
+
+export { DEFAULT_SOURCES };
 
 const STORAGE_KEY_ACTIVE_SESSION = 'makini_active_session';
 const STORAGE_KEY_SESSION_HISTORY = 'makini_session_history';
+const STORAGE_KEY_IMPORTED = 'makini_sessions_imported';
 
-export const DEFAULT_SOURCES: SourceLink[] = [
-  {
-    title: 'MDN Docs',
-    description: 'Core documentation on functions, syntax, and execution environments.',
-    url: 'https://developer.mozilla.org',
-    icon: 'description'
-  },
-  {
-    title: 'Google Scholar',
-    description: 'Academic papers on computational theory, algorithms, and cognitive science.',
-    url: 'https://scholar.google.com',
-    icon: 'school'
-  },
-  {
-    title: 'Wikipedia',
-    description: 'Overview of foundational principles, proofs, and historical context.',
-    url: 'https://wikipedia.org',
-    icon: 'language'
-  }
-];
+interface SessionResponse {
+  session: Session | null;
+}
+
+interface SessionListResponse {
+  sessions: Session[];
+}
 
 @Injectable({
   providedIn: 'root'
@@ -32,14 +36,25 @@ export const DEFAULT_SOURCES: SourceLink[] = [
 export class SessionService implements OnDestroy {
   private platformId = inject(PLATFORM_ID);
   private ngZone = inject(NgZone);
+  private http = inject(HttpClient);
+  private clerk = inject(ClerkService, { optional: true });
   private isBrowser = isPlatformBrowser(this.platformId);
 
-  private timerInterval: any = null;
+  private timerInterval: ReturnType<typeof setInterval> | null = null;
+  private scratchpadTimer: ReturnType<typeof setTimeout> | null = null;
+  private endingInFlight = false;
+  private lastSignedIn: boolean | null = null;
+  private hydrateChain: Promise<void> = Promise.resolve();
+  private readyResolve!: () => void;
+  private markedReady = false;
+  private readonly ready = new Promise<void>(resolve => {
+    this.readyResolve = resolve;
+  });
 
-  readonly activeSession = signal<Session | null>(this.loadActiveSession());
-  readonly sessionHistory = signal<Session[]>(this.loadSessionHistory());
-  
+  readonly activeSession = signal<Session | null>(null);
+  readonly sessionHistory = signal<Session[]>([]);
   readonly remainingSeconds = signal<number>(0);
+  readonly isHydrating = signal<boolean>(false);
 
   readonly status = computed(() => this.activeSession()?.status ?? 'idle');
   readonly isLocked = computed(() => this.status() === 'locked');
@@ -64,118 +79,199 @@ export class SessionService implements OnDestroy {
   });
 
   constructor() {
-    if (this.isBrowser) {
-      this.initTimerFromActiveSession();
+    if (!this.isBrowser) {
+      this.markReady();
+      return;
     }
+
+    if (!this.clerk) {
+      void this.hydrate();
+      return;
+    }
+
+    effect(() => {
+      const loaded = this.clerk?.isLoaded() ?? false;
+      const signedIn = this.clerk?.isSignedIn() ?? false;
+      untracked(() => {
+        if (!loaded) return;
+        if (signedIn) {
+          if (this.lastSignedIn === true) return;
+          this.lastSignedIn = true;
+          void this.hydrate();
+        } else {
+          this.lastSignedIn = false;
+          this.stopTimer();
+          this.activeSession.set(null);
+          this.sessionHistory.set([]);
+          this.markReady();
+        }
+      });
+    });
   }
 
   ngOnDestroy(): void {
     this.stopTimer();
+    if (this.scratchpadTimer) {
+      clearTimeout(this.scratchpadTimer);
+    }
   }
 
-  startSession(topic: string, plannedMinutes: number, customSources?: SourceLink[]): Session {
+  whenReady(): Promise<void> {
+    return this.ready.then(() => this.hydrateChain);
+  }
+
+  async hydrate(): Promise<void> {
+    this.hydrateChain = this.runHydrate();
+    await this.hydrateChain;
+  }
+
+  private async runHydrate(): Promise<void> {
+    if (!this.isBrowser) {
+      this.markReady();
+      return;
+    }
+
+    this.isHydrating.set(true);
+    try {
+      await this.importLegacyLocalData();
+
+      const [activeRes, historyRes] = await Promise.all([
+        firstValueFrom(this.http.get<SessionResponse>('/api/sessions/active')),
+        firstValueFrom(this.http.get<SessionListResponse>('/api/sessions'))
+      ]);
+
+      this.activeSession.set(activeRes.session);
+      this.sessionHistory.set(historyRes.sessions ?? []);
+      this.initTimerFromActiveSession();
+    } catch (error) {
+      console.error('[makini] Failed to load sessions from the server.', error);
+    } finally {
+      this.isHydrating.set(false);
+      this.lastSignedIn = true;
+      this.markReady();
+    }
+  }
+
+  async startSession(
+    topic: string,
+    plannedMinutes: number,
+    customSources?: SourceLink[]
+  ): Promise<Session> {
     this.stopTimer();
 
-    const now = Date.now();
-    const newSession: Session = {
-      id: 'ses_' + Math.random().toString(36).substring(2, 9),
-      topic: topic.trim() || 'Deep Focus Exploration',
-      plannedMinutes: plannedMinutes || 25,
-      startedAt: now,
-      status: 'locked',
-      scratchpadNotes: '',
-      sources: customSources && customSources.length > 0 ? customSources : DEFAULT_SOURCES
-    };
-
-    this.activeSession.set(newSession);
-    this.remainingSeconds.set(newSession.plannedMinutes * 60);
-    this.saveActiveSession(newSession);
-    this.startTimer(newSession.startedAt, newSession.plannedMinutes);
-
-    return newSession;
+    try {
+      const res = await firstValueFrom(
+        this.http.post<SessionResponse>('/api/sessions', {
+          topic: topic.trim() || 'Deep Focus Exploration',
+          plannedMinutes: plannedMinutes || 25,
+          sources: customSources && customSources.length > 0 ? customSources : DEFAULT_SOURCES
+        })
+      );
+      const session = res.session!;
+      this.activeSession.set(session);
+      this.remainingSeconds.set(session.plannedMinutes * 60);
+      this.startTimer(session.startedAt, session.plannedMinutes);
+      return session;
+    } catch (error) {
+      const conflict = this.conflictSession(error);
+      if (conflict) {
+        this.activeSession.set(conflict);
+        this.initTimerFromActiveSession();
+        return conflict;
+      }
+      throw error;
+    }
   }
 
   updateScratchpad(notes: string): void {
     const current = this.activeSession();
-    if (!current) return;
+    if (!current || current.status !== 'locked') return;
 
-    const updated: Session = {
-      ...current,
-      scratchpadNotes: notes
-    };
-    this.activeSession.set(updated);
-    this.saveActiveSession(updated);
+    this.activeSession.set({ ...current, scratchpadNotes: notes });
+
+    if (this.scratchpadTimer) {
+      clearTimeout(this.scratchpadTimer);
+    }
+    this.scratchpadTimer = setTimeout(() => {
+      void firstValueFrom(
+        this.http.patch<SessionResponse>(`/api/sessions/${current.id}/scratchpad`, { notes })
+      ).catch(err => console.error('[makini] Failed to save scratchpad.', err));
+    }, 400);
   }
 
-  endSessionEarly(): void {
+  async endSessionEarly(): Promise<void> {
+    const current = this.activeSession();
+    if (!current || current.status !== 'locked') return;
+    await this.persistEnd(current);
+  }
+
+  async submitReflection(reflection: SessionReflection): Promise<void> {
+    const current = this.activeSession();
+    if (!current) return;
+
+    const res = await firstValueFrom(
+      this.http.post<SessionResponse>(`/api/sessions/${current.id}/reflection`, reflection)
+    );
+    const completed = res.session!;
+    this.activeSession.set(completed);
+    this.sessionHistory.set([
+      completed,
+      ...this.sessionHistory().filter(session => session.id !== completed.id)
+    ]);
+  }
+
+  reviewSession(session: Session): void {
     this.stopTimer();
-    const current = this.activeSession();
-    if (!current) return;
-
-    const updated: Session = {
-      ...current,
-      status: 'reflecting',
-      endedAt: Date.now()
-    };
-    this.activeSession.set(updated);
     this.remainingSeconds.set(0);
-    this.saveActiveSession(updated);
-  }
-
-  submitReflection(reflection: SessionReflection): void {
-    const current = this.activeSession();
-    if (!current) return;
-
-    const completedSession: Session = {
-      ...current,
-      status: 'completed',
-      endedAt: current.endedAt || Date.now(),
-      reflection
-    };
-
-    this.activeSession.set(completedSession);
-    this.saveActiveSession(completedSession);
-
-    // Also persist into session history
-    const history = [completedSession, ...this.sessionHistory().filter(s => s.id !== completedSession.id)];
-    this.sessionHistory.set(history);
-    this.saveSessionHistory(history);
+    this.activeSession.set(session);
   }
 
   resetActiveSession(): void {
     this.stopTimer();
     this.activeSession.set(null);
     this.remainingSeconds.set(0);
-    if (this.isBrowser) {
-      localStorage.removeItem(STORAGE_KEY_ACTIVE_SESSION);
+  }
+
+  private async persistEnd(session: Session): Promise<void> {
+    if (this.endingInFlight) return;
+    this.endingInFlight = true;
+    this.stopTimer();
+    this.remainingSeconds.set(0);
+
+    try {
+      const res = await firstValueFrom(
+        this.http.post<SessionResponse>(`/api/sessions/${session.id}/end`, {})
+      );
+      this.activeSession.set(res.session);
+    } catch (error) {
+      console.error('[makini] Failed to end session on the server.', error);
+      this.activeSession.set({ ...session, status: 'reflecting', endedAt: Date.now() });
+    } finally {
+      this.endingInFlight = false;
     }
   }
 
   private initTimerFromActiveSession(): void {
     const session = this.activeSession();
-    if (!session) return;
-
-    if (session.status === 'locked') {
-      const totalSeconds = session.plannedMinutes * 60;
-      const elapsedSeconds = Math.floor((Date.now() - session.startedAt) / 1000);
-      const remaining = totalSeconds - elapsedSeconds;
-
-      if (remaining <= 0) {
-        // Timer completed while away
-        this.remainingSeconds.set(0);
-        const updated: Session = {
-          ...session,
-          status: 'reflecting',
-          endedAt: session.startedAt + totalSeconds * 1000
-        };
-        this.activeSession.set(updated);
-        this.saveActiveSession(updated);
-      } else {
-        this.remainingSeconds.set(remaining);
-        this.startTimer(session.startedAt, session.plannedMinutes);
-      }
-    } else {
+    if (!session) {
       this.remainingSeconds.set(0);
+      return;
+    }
+
+    if (session.status !== 'locked') {
+      this.remainingSeconds.set(0);
+      return;
+    }
+
+    const totalSeconds = session.plannedMinutes * 60;
+    const elapsedSeconds = Math.floor((Date.now() - session.startedAt) / 1000);
+    const remaining = totalSeconds - elapsedSeconds;
+
+    if (remaining <= 0) {
+      void this.persistEnd(session);
+    } else {
+      this.remainingSeconds.set(remaining);
+      this.startTimer(session.startedAt, session.plannedMinutes);
     }
   }
 
@@ -192,17 +288,12 @@ export class SessionService implements OnDestroy {
 
         this.ngZone.run(() => {
           if (remaining <= 0) {
-            this.remainingSeconds.set(0);
-            this.stopTimer();
             const current = this.activeSession();
             if (current && current.status === 'locked') {
-              const updated: Session = {
-                ...current,
-                status: 'reflecting',
-                endedAt: Date.now()
-              };
-              this.activeSession.set(updated);
-              this.saveActiveSession(updated);
+              void this.persistEnd(current);
+            } else {
+              this.remainingSeconds.set(0);
+              this.stopTimer();
             }
           } else {
             this.remainingSeconds.set(remaining);
@@ -219,69 +310,53 @@ export class SessionService implements OnDestroy {
     }
   }
 
-  private loadActiveSession(): Session | null {
-    if (!this.isBrowser) return null;
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY_ACTIVE_SESSION);
-      return raw ? JSON.parse(raw) : null;
-    } catch {
-      return null;
-    }
+  private markReady(): void {
+    if (this.markedReady) return;
+    this.markedReady = true;
+    this.readyResolve();
   }
 
-  private saveActiveSession(session: Session): void {
+  private conflictSession(error: unknown): Session | null {
+    if (!(error instanceof HttpErrorResponse) || error.status !== 409) return null;
+    const body = error.error as SessionResponse | undefined;
+    return body?.session ?? null;
+  }
+
+  private async importLegacyLocalData(): Promise<void> {
     if (!this.isBrowser) return;
+    if (localStorage.getItem(STORAGE_KEY_IMPORTED) === '1') return;
+
+    const collected: Session[] = [];
     try {
-      localStorage.setItem(STORAGE_KEY_ACTIVE_SESSION, JSON.stringify(session));
-    } catch (e) {
-      console.error('Failed to save active session to localStorage', e);
-    }
-  }
-
-  private loadSessionHistory(): Session[] {
-    if (!this.isBrowser) return [];
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY_SESSION_HISTORY);
-      if (raw) return JSON.parse(raw);
-    } catch {}
-
-    // Initial mock history for demo and testing analytics
-    return this.getMockHistory();
-  }
-
-  private saveSessionHistory(history: Session[]): void {
-    if (!this.isBrowser) return;
-    try {
-      localStorage.setItem(STORAGE_KEY_SESSION_HISTORY, JSON.stringify(history));
-    } catch (e) {
-      console.error('Failed to save session history to localStorage', e);
-    }
-  }
-
-  private getMockHistory(): Session[] {
-    const day = 24 * 60 * 60 * 1000;
-    const now = Date.now();
-    return [
-      {
-        id: 'ses_mock_1',
-        topic: 'Recursive Call Stacks',
-        plannedMinutes: 30,
-        startedAt: now - day,
-        endedAt: now - day + 30 * 60 * 1000,
-        status: 'completed',
-        scratchpadNotes: 'Where does stack overflow occur in deep recursion?',
-        sources: DEFAULT_SOURCES,
-        reflection: {
-          text: 'A recursive function must have a clear base case and a step that reduces input size. Each call adds a frame until unwinding starts.',
-          selfCheck: {
-            explainWithoutNotes: true,
-            identifyEdgeCases: true,
-            teachSomeoneElse: true
-          },
-          confidenceRating: 4,
-          submittedAt: now - day + 35 * 60 * 1000
-        }
+      const historyRaw = localStorage.getItem(STORAGE_KEY_SESSION_HISTORY);
+      if (historyRaw) {
+        const parsed = JSON.parse(historyRaw) as Session[];
+        if (Array.isArray(parsed)) collected.push(...parsed);
       }
-    ];
+      const activeRaw = localStorage.getItem(STORAGE_KEY_ACTIVE_SESSION);
+      if (activeRaw) {
+        collected.push(JSON.parse(activeRaw) as Session);
+      }
+    } catch {
+      localStorage.setItem(STORAGE_KEY_IMPORTED, '1');
+      return;
+    }
+
+    const completed = collected.filter(
+      session => session?.status === 'completed' && session.reflection?.text
+    );
+    if (completed.length === 0) {
+      localStorage.setItem(STORAGE_KEY_IMPORTED, '1');
+      return;
+    }
+
+    try {
+      await firstValueFrom(this.http.post('/api/sessions/import', { sessions: completed }));
+      localStorage.removeItem(STORAGE_KEY_ACTIVE_SESSION);
+      localStorage.removeItem(STORAGE_KEY_SESSION_HISTORY);
+      localStorage.setItem(STORAGE_KEY_IMPORTED, '1');
+    } catch (error) {
+      console.warn('[makini] Could not import local session history.', error);
+    }
   }
 }

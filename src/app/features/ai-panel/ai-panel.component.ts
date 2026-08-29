@@ -115,7 +115,7 @@ import { ConfidenceChartComponent } from '../../shared/components/confidence-cha
                     [class.bg-error-container/20]="!runtimeConnected()"
                   >
                     <span class="w-2 h-2 rounded-full" [class.bg-secondary]="runtimeConnected()" [class.bg-error]="!runtimeConnected()"></span>
-                    Gemma: {{ runtimeStatusLabel() }}
+                    Groq: {{ runtimeStatusLabel() }}
                   </span>
 
                   <button
@@ -293,6 +293,7 @@ export class AiPanelComponent implements OnInit {
 
     const active = this.sessionService.activeSession();
     if (active) {
+      void this.chatService.loadSessionChat(active);
       if (active.scratchpadNotes) {
         const lines = active.scratchpadNotes
           .split('\n')
