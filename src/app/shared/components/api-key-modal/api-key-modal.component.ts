@@ -13,7 +13,7 @@ import { ChatService } from '../../../core/services/chat.service';
         <div class="flex items-center justify-between mb-4">
           <div class="flex items-center gap-2 text-primary">
             <span class="material-symbols-outlined">memory</span>
-            <h2 id="modal-title" class="font-headline-sm text-headline-sm text-on-surface">Local Gemma Runtime</h2>
+            <h2 id="modal-title" class="font-headline-sm text-headline-sm text-on-surface">AI Tutor Runtime</h2>
           </div>
           <button (click)="close.emit()" class="text-on-surface-variant hover:text-on-surface p-1 rounded hover:bg-surface-container-high transition-colors" aria-label="Close modal">
             <span class="material-symbols-outlined">close</span>
@@ -21,7 +21,7 @@ import { ChatService } from '../../../core/services/chat.service';
         </div>
 
         <p class="font-body-md text-sm text-on-surface-variant mb-5 leading-relaxed">
-          Makini now uses a self-hosted Gemma model through Ollama. User API keys are no longer required.
+          The tutor runs on Groq from the server. You do not need a personal API key in the browser.
         </p>
 
         <div class="bg-surface-container border border-outline-variant rounded-lg p-4 mb-5">
@@ -47,12 +47,10 @@ import { ChatService } from '../../../core/services/chat.service';
         </div>
 
         <div class="bg-surface-container border border-secondary/30 rounded-lg p-3.5 mb-6 flex items-start gap-3">
-          <span class="material-symbols-outlined text-secondary text-[20px] shrink-0 mt-0.5">terminal</span>
+          <span class="material-symbols-outlined text-secondary text-[20px] shrink-0 mt-0.5">vpn_key</span>
           <div class="text-xs text-on-surface-variant leading-relaxed space-y-1">
-            <strong class="text-secondary font-medium block">Local setup</strong>
-            <p>1) <code class="text-primary bg-surface px-1 py-0.5 rounded">ollama serve</code></p>
-            <p>2) <code class="text-primary bg-surface px-1 py-0.5 rounded">ollama pull gemma3:4b</code></p>
-            <p>3) Restart Makini server if Ollama was started later</p>
+            <strong class="text-secondary font-medium block">Server setup</strong>
+            <p>Add <code class="text-primary bg-surface px-1 py-0.5 rounded">GROQ_API_KEY</code> from console.groq.com to <code class="text-primary bg-surface px-1 py-0.5 rounded">.env</code>, then restart the server.</p>
           </div>
         </div>
 
@@ -74,7 +72,7 @@ export class ApiKeyModalComponent implements OnInit {
   protected chatService = inject(ChatService);
 
   protected runtimeOk = signal<boolean>(false);
-  protected healthModel = signal<string>('gemma3:4b');
+  protected healthModel = signal<string>('llama-3.3-70b-versatile');
   protected healthError = signal<string>('');
 
   ngOnInit(): void {
@@ -84,7 +82,7 @@ export class ApiKeyModalComponent implements OnInit {
   refreshHealth(): void {
     this.chatService.checkRuntimeHealth().subscribe((health) => {
       this.runtimeOk.set(health.ok);
-      this.healthModel.set(health.model || 'gemma3:4b');
+      this.healthModel.set(health.model || 'llama-3.3-70b-versatile');
       this.healthError.set(health.error || '');
     });
   }

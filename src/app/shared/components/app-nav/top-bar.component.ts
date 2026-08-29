@@ -34,10 +34,10 @@ import { clerkAppearance } from '../../../core/clerk-appearance';
           <button
             (click)="openApiKeyModal.emit()"
             class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-surface-container border border-outline-variant text-xs font-code-sm hover:border-primary transition-colors"
-            title="Local AI runtime status"
+            title="AI tutor runtime status"
           >
             <span class="w-2 h-2 rounded-full" [class.bg-secondary]="aiRuntimeStatus() === 'Connected'" [class.bg-error]="aiRuntimeStatus() !== 'Connected'"></span>
-            <span class="text-on-surface-variant hidden sm:inline">Gemma: {{ aiRuntimeStatus() }}</span>
+            <span class="text-on-surface-variant hidden sm:inline">Groq: {{ aiRuntimeStatus() }}</span>
           </button>
         }
 

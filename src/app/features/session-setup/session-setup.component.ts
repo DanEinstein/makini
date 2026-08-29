@@ -111,7 +111,7 @@ import { SessionService } from '../../core/services/session.service';
             <div class="pt-6 border-t border-outline-variant mt-8">
               <button
                 type="submit"
-                [disabled]="!isValid()"
+                [disabled]="!isValid() || starting()"
                 class="w-full bg-[#ffb224] hover:bg-[#ffba47] disabled:opacity-50 text-[#000000] font-label-md text-label-md font-bold py-4 rounded transition-colors duration-150 flex justify-center items-center gap-2 group shadow-lg"
               >
                 <span class="material-symbols-outlined fill-1" aria-hidden="true">lock</span>
@@ -141,6 +141,8 @@ export class SessionSetupComponent {
   protected isCustom = signal<boolean>(false);
   protected customMinutes = signal<number>(25);
 
+  protected starting = signal(false);
+
   selectPreset(preset: number): void {
     this.isCustom.set(false);
     this.selectedDuration.set(preset);
@@ -156,11 +158,22 @@ export class SessionSetupComponent {
     return dur > 0;
   }
 
-  onStartSession(): void {
-    if (!this.isValid()) return;
+  async onStartSession(): Promise<void> {
+    if (!this.isValid() || this.starting()) return;
 
     const duration = this.isCustom() ? this.customMinutes() : this.selectedDuration();
-    this.sessionService.startSession(this.topic(), duration);
-    this.router.navigate(['/session/lock']);
+    this.starting.set(true);
+    try {
+      const session = await this.sessionService.startSession(this.topic(), duration);
+      if (session.status === 'reflecting') {
+        await this.router.navigate(['/session/reflect']);
+        return;
+      }
+      await this.router.navigate(['/session/lock']);
+    } catch (error) {
+      console.error('[makini] Could not start a focus session.', error);
+    } finally {
+      this.starting.set(false);
+    }
   }
 }

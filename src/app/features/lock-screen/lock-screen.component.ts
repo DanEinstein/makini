@@ -118,10 +118,10 @@ export class LockScreenComponent {
     this.sessionService.updateScratchpad(value);
   }
 
-  onEndEarly(): void {
+  async onEndEarly(): Promise<void> {
     if (confirm('Are you ready to stop the timer early and proceed to the reflection phase?')) {
-      this.sessionService.endSessionEarly();
-      this.router.navigate(['/session/reflect']);
+      await this.sessionService.endSessionEarly();
+      await this.router.navigate(['/session/reflect']);
     }
   }
 }

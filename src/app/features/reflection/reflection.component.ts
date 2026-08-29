@@ -1,11 +1,13 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, inject, signal, computed, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
+import { firstValueFrom } from 'rxjs';
 import { SessionService } from '../../core/services/session.service';
 import { SideNavComponent } from '../../shared/components/app-nav/side-nav.component';
 import { TopBarComponent } from '../../shared/components/app-nav/top-bar.component';
 import { ApiKeyModalComponent } from '../../shared/components/api-key-modal/api-key-modal.component';
-import { SelfCheckProtocol } from '../../core/models/session.model';
+import { ReflectionInputMode, SelfCheckProtocol } from '../../core/models/session.model';
 
 @Component({
   selector: 'app-reflection',
@@ -86,6 +88,26 @@ import { SelfCheckProtocol } from '../../core/models/session.model';
                     >
                       <span class="material-symbols-outlined text-[18px]">code</span>
                     </button>
+                    <div class="w-px h-4 bg-outline-variant mx-1"></div>
+                    <button
+                      type="button"
+                      (click)="toggleRecording()"
+                      [disabled]="isTranscribing()"
+                      class="p-1.5 rounded transition-colors flex items-center gap-1.5"
+                      [class.text-error]="isRecording()"
+                      [class.bg-error/10]="isRecording()"
+                      [class.text-on-surface-variant]="!isRecording()"
+                      [class.hover:text-on-surface]="!isRecording()"
+                      [class.hover:bg-surface-container-high]="!isRecording()"
+                      [title]="isRecording() ? 'Stop recording' : 'Record spoken reflection'"
+                    >
+                      <span class="material-symbols-outlined text-[18px]">{{ isRecording() ? 'stop_circle' : 'mic' }}</span>
+                      @if (isRecording()) {
+                        <span class="font-code-sm text-[11px] tabular-nums">{{ formattedRecordTime() }}</span>
+                      } @else if (isTranscribing()) {
+                        <span class="font-code-sm text-[11px]">Transcribing…</span>
+                      }
+                    </button>
                   </div>
 
                   <!-- Textarea -->
@@ -94,9 +116,12 @@ import { SelfCheckProtocol } from '../../core/models/session.model';
                     [(ngModel)]="reflectionText"
                     id="reflectionTextarea"
                     class="w-full flex-1 bg-transparent border-none focus:ring-0 text-body-lg font-body-lg text-on-surface placeholder-on-surface-variant/50 p-5 resize-none min-h-[320px] outline-none"
-                    placeholder="Start typing your synthesis here. Focus on the core concepts, boundary cases, and how they connect..."
+                    placeholder="Start typing your synthesis here — or tap the mic to speak it. Focus on the core concepts, boundary cases, and how they connect..."
                   ></textarea>
                 </div>
+                @if (recordError()) {
+                  <p class="mt-3 text-xs text-error font-code-sm">{{ recordError() }}</p>
+                }
 
                 <!-- Scratchpad Reference Accordion / Helper -->
                 @if (sessionService.activeSession()?.scratchpadNotes; as notes) {
@@ -230,19 +255,38 @@ import { SelfCheckProtocol } from '../../core/models/session.model';
     </div>
   `
 })
-export class ReflectionComponent {
+export class ReflectionComponent implements OnDestroy {
   protected sessionService = inject(SessionService);
   private router = inject(Router);
+  private http = inject(HttpClient);
 
   protected reflectionText = signal<string>('');
   protected confidenceRating = signal<number>(4);
   protected showApiKeyModal = signal<boolean>(false);
+  protected isRecording = signal(false);
+  protected isTranscribing = signal(false);
+  protected recordSeconds = signal(0);
+  protected recordError = signal('');
+  protected inputMode = signal<ReflectionInputMode>('typed');
+
+  private mediaRecorder: MediaRecorder | null = null;
+  private recordedChunks: Blob[] = [];
+  private recTimer: ReturnType<typeof setInterval> | null = null;
+  private recStartedAt = 0;
+  private mediaStream: MediaStream | null = null;
 
   protected selfCheck: SelfCheckProtocol = {
     explainWithoutNotes: false,
     identifyEdgeCases: false,
     teachSomeoneElse: false
   };
+
+  readonly formattedRecordTime = computed(() => {
+    const total = this.recordSeconds();
+    const mins = Math.floor(total / 60);
+    const secs = total % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  });
 
   readonly isChecklistComplete = computed(() => {
     return (
@@ -256,7 +300,9 @@ export class ReflectionComponent {
     return (
       this.reflectionText().trim().length > 10 &&
       this.isChecklistComplete() &&
-      this.confidenceRating() > 0
+      this.confidenceRating() > 0 &&
+      !this.isRecording() &&
+      !this.isTranscribing()
     );
   });
 
@@ -299,16 +345,145 @@ export class ReflectionComponent {
     }, 10);
   }
 
-  onSubmitReflection(): void {
+  ngOnDestroy(): void {
+    this.stopMedia();
+  }
+
+  toggleRecording(): void {
+    if (this.isTranscribing()) return;
+    if (this.isRecording()) {
+      this.stopRecording();
+      return;
+    }
+    void this.startRecording();
+  }
+
+  private async startRecording(): Promise<void> {
+    this.recordError.set('');
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+      this.recordError.set('Recording is not supported in this browser. Type your reflection instead.');
+      return;
+    }
+
+    try {
+      this.mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      this.recordError.set('Microphone permission was denied. You can still type your reflection.');
+      return;
+    }
+
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+      ? 'audio/webm;codecs=opus'
+      : MediaRecorder.isTypeSupported('audio/webm')
+        ? 'audio/webm'
+        : '';
+
+    this.recordedChunks = [];
+    this.mediaRecorder = mimeType
+      ? new MediaRecorder(this.mediaStream, { mimeType })
+      : new MediaRecorder(this.mediaStream);
+
+    this.mediaRecorder.ondataavailable = event => {
+      if (event.data.size > 0) this.recordedChunks.push(event.data);
+    };
+    this.mediaRecorder.onstop = () => {
+      void this.finishRecording();
+    };
+
+    this.recStartedAt = Date.now();
+    this.recordSeconds.set(0);
+    this.recTimer = setInterval(() => {
+      this.recordSeconds.set(Math.floor((Date.now() - this.recStartedAt) / 1000));
+    }, 250);
+    this.mediaRecorder.start();
+    this.isRecording.set(true);
+  }
+
+  private stopRecording(): void {
+    if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+      this.mediaRecorder.stop();
+    }
+    this.isRecording.set(false);
+    if (this.recTimer) {
+      clearInterval(this.recTimer);
+      this.recTimer = null;
+    }
+  }
+
+  private async finishRecording(): Promise<void> {
+    const durationMs = Date.now() - this.recStartedAt;
+    const type = this.mediaRecorder?.mimeType || 'audio/webm';
+    this.stopMedia();
+
+    if (durationMs < 3000) {
+      this.recordError.set('Speak for at least 3 seconds before stopping.');
+      return;
+    }
+    if (durationMs > 3 * 60 * 1000) {
+      this.recordError.set('Recordings are limited to 3 minutes.');
+      return;
+    }
+
+    const blob = new Blob(this.recordedChunks, { type });
+    this.recordedChunks = [];
+    this.isTranscribing.set(true);
+
+    try {
+      const sessionId = this.sessionService.activeSession()?.id;
+      const text = await firstValueFrom(
+        this.http.post<{ text: string }>('/api/reflections/transcribe', blob, {
+          headers: {
+            'Content-Type': type,
+            'x-audio-duration-ms': String(durationMs),
+            ...(sessionId ? { 'x-session-id': sessionId } : {}),
+          },
+        })
+      );
+      const transcript = text.text?.trim();
+      if (!transcript) {
+        this.recordError.set('No speech was detected. Try again or type your reflection.');
+        return;
+      }
+
+      const current = this.reflectionText().trim();
+      this.reflectionText.set(current ? `${current}\n\n${transcript}` : transcript);
+      this.inputMode.set('spoken');
+    } catch (error) {
+      const message =
+        error && typeof error === 'object' && 'error' in error
+          ? (error as { error?: { error?: string } }).error?.error
+          : undefined;
+      this.recordError.set(message || 'Transcription failed. You can still type your reflection.');
+    } finally {
+      this.isTranscribing.set(false);
+    }
+  }
+
+  private stopMedia(): void {
+    if (this.recTimer) {
+      clearInterval(this.recTimer);
+      this.recTimer = null;
+    }
+    if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+      this.mediaRecorder.stop();
+    }
+    this.mediaRecorder = null;
+    this.mediaStream?.getTracks().forEach(track => track.stop());
+    this.mediaStream = null;
+    this.isRecording.set(false);
+  }
+
+  async onSubmitReflection(): Promise<void> {
     if (!this.isSubmitEnabled()) return;
 
-    this.sessionService.submitReflection({
+    await this.sessionService.submitReflection({
       text: this.reflectionText().trim(),
       selfCheck: { ...this.selfCheck },
       confidenceRating: this.confidenceRating(),
-      submittedAt: Date.now()
+      submittedAt: Date.now(),
+      inputMode: this.inputMode()
     });
 
-    this.router.navigate(['/session/ai-tutor']);
+    await this.router.navigate(['/session/ai-tutor']);
   }
 }

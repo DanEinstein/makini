@@ -13,11 +13,14 @@ export interface SelfCheckProtocol {
   teachSomeoneElse: boolean;
 }
 
+export type ReflectionInputMode = 'typed' | 'spoken';
+
 export interface SessionReflection {
   text: string;
   selfCheck: SelfCheckProtocol;
   confidenceRating: number; // 1 - 5
   submittedAt: number;
+  inputMode?: ReflectionInputMode;
 }
 
 export interface Session {
