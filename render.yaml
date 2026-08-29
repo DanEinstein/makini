@@ -26,7 +26,9 @@ services:
       - key: ELEVENLABS_API_KEY
         sync: false
       - key: NODE_VERSION
-        value: "22"
+        value: "22.22.3"
+      - key: NG_ALLOWED_HOSTS
+        value: "makini.onrender.com,*.onrender.com,localhost,127.0.0.1"
 
 databases:
   - name: makini-db
