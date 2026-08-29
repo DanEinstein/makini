@@ -248,7 +248,7 @@ import { ReflectionInputMode, SelfCheckProtocol } from '../../core/models/sessio
         </main>
       </div>
 
-      <!-- BYOK Modal -->
+      <!-- Runtime status modal -->
       @if (showApiKeyModal()) {
         <app-api-key-modal (close)="showApiKeyModal.set(false)" />
       }
@@ -393,7 +393,11 @@ export class ReflectionComponent implements OnDestroy {
     this.recStartedAt = Date.now();
     this.recordSeconds.set(0);
     this.recTimer = setInterval(() => {
-      this.recordSeconds.set(Math.floor((Date.now() - this.recStartedAt) / 1000));
+      const elapsed = Date.now() - this.recStartedAt;
+      this.recordSeconds.set(Math.floor(elapsed / 1000));
+      if (elapsed >= 3 * 60 * 1000) {
+        this.stopRecording();
+      }
     }, 250);
     this.mediaRecorder.start();
     this.isRecording.set(true);

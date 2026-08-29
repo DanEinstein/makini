@@ -38,7 +38,8 @@ import { SessionService } from '../../core/services/session.service';
                   class="w-full bg-transparent border-none text-on-background font-code-sm text-code-sm placeholder:text-on-surface-variant/50 focus:outline-none p-0"
                   id="topic"
                   name="topic"
-                  [(ngModel)]="topic"
+                  [ngModel]="topic()"
+                  (ngModelChange)="topic.set($event)"
                   placeholder="e.g., Understanding Recursion & Call Stacks"
                   type="text"
                   required
@@ -98,7 +99,8 @@ import { SessionService } from '../../core/services/session.service';
                     type="number"
                     min="1"
                     max="180"
-                    [(ngModel)]="customMinutes"
+                    [ngModel]="customMinutes()"
+                    (ngModelChange)="customMinutes.set(+$event)"
                     name="customMinutes"
                     class="w-24 bg-[#0D1117] border border-primary text-on-surface font-code-sm text-sm rounded px-3 py-1.5 focus:outline-none"
                   />

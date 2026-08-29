@@ -9,7 +9,7 @@ export interface ChatMessage {
   highlightNote?: string;
 }
 
-export type SupportedAIModel = 'llama-3.3-70b-versatile';
+export type SupportedAIModel = 'openai/gpt-oss-20b';
 
 export interface AIModelOption {
   id: SupportedAIModel;

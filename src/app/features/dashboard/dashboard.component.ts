@@ -184,7 +184,7 @@ import { Session } from '../../core/models/session.model';
         </main>
       </div>
 
-      <!-- BYOK Settings Modal -->
+      <!-- Runtime status modal -->
       @if (showApiKeyModal()) {
         <app-api-key-modal (close)="showApiKeyModal.set(false)" />
       }

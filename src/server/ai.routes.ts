@@ -8,7 +8,7 @@ import { ensureUser } from './db/users';
 import { logUsage } from './db/usage';
 
 const GROQ_API_KEY = process.env['GROQ_API_KEY'] || '';
-const GROQ_MODEL = process.env['GROQ_MODEL'] || 'llama-3.3-70b-versatile';
+const GROQ_MODEL = process.env['GROQ_MODEL'] || 'openai/gpt-oss-20b';
 
 function isRealKey(value: string): boolean {
   return value.startsWith('gsk_') && !value.includes('replace_me');
