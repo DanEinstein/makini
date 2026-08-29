@@ -53,8 +53,18 @@ if (!process.env['ELEVENLABS_API_KEY'] || process.env['ELEVENLABS_API_KEY'].incl
   );
 }
 
+const ALLOWED_HOSTS = (
+  process.env['NG_ALLOWED_HOSTS'] ||
+  'localhost,127.0.0.1,makini.onrender.com,*.onrender.com'
+)
+  .split(',')
+  .map(host => host.trim())
+  .filter(Boolean);
+
 const app = express();
-const angularApp = new AngularNodeAppEngine();
+const angularApp = new AngularNodeAppEngine({
+  allowedHosts: ALLOWED_HOSTS,
+});
 
 const jsonParser = express.json({ limit: '1mb' });
 app.use((req, res, next) => {
