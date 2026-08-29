@@ -83,7 +83,7 @@ key.
 
 1. Create an API key at [console.groq.com/keys](https://console.groq.com/keys).
 2. Set `GROQ_API_KEY` in `.env`. Optionally override `GROQ_MODEL`
-   (default `llama-3.3-70b-versatile`).
+   (default `openai/gpt-oss-20b`).
 3. Restart `ng serve`.
 
 The app exposes:

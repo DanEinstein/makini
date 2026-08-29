@@ -72,7 +72,7 @@ export class ApiKeyModalComponent implements OnInit {
   protected chatService = inject(ChatService);
 
   protected runtimeOk = signal<boolean>(false);
-  protected healthModel = signal<string>('llama-3.3-70b-versatile');
+  protected healthModel = signal<string>('openai/gpt-oss-20b');
   protected healthError = signal<string>('');
 
   ngOnInit(): void {
@@ -82,7 +82,7 @@ export class ApiKeyModalComponent implements OnInit {
   refreshHealth(): void {
     this.chatService.checkRuntimeHealth().subscribe((health) => {
       this.runtimeOk.set(health.ok);
-      this.healthModel.set(health.model || 'llama-3.3-70b-versatile');
+      this.healthModel.set(health.model || 'openai/gpt-oss-20b');
       this.healthError.set(health.error || '');
     });
   }

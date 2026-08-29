@@ -173,7 +173,8 @@ import { ConfidenceChartComponent } from '../../shared/components/confidence-cha
               <div class="p-4 border-t border-white/10 bg-surface/50">
                 <div class="relative flex items-center">
                   <textarea
-                    [(ngModel)]="promptText"
+                    [ngModel]="promptText()"
+                    (ngModelChange)="promptText.set($event)"
                     (keydown)="onKeyDown($event)"
                     rows="2"
                     placeholder="Ask a clarifying question or test your mental model... (Press Cmd+Enter or Enter to send)"

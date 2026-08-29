@@ -6,7 +6,7 @@ import { ChatMessage, AIModelOption, SupportedAIModel } from '../models/chat.mod
 import { Session } from '../models/session.model';
 
 export const AI_MODELS: AIModelOption[] = [
-  { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B', provider: 'Groq' },
+  { id: 'openai/gpt-oss-20b', label: 'GPT-OSS 20B', provider: 'Groq' },
 ];
 
 interface RuntimeHealthResponse {
@@ -31,7 +31,7 @@ export class ChatService {
   private http = inject(HttpClient);
   private clerk = inject(ClerkService, { optional: true });
 
-  readonly selectedModel = signal<SupportedAIModel>('llama-3.3-70b-versatile');
+  readonly selectedModel = signal<SupportedAIModel>('openai/gpt-oss-20b');
   readonly messages = signal<ChatMessage[]>([]);
   readonly isStreaming = signal<boolean>(false);
 

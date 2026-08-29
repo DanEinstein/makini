@@ -87,11 +87,15 @@ import { Session } from '../../core/models/session.model';
                     <div class="md:col-span-4 bg-[#0D1117] border border-outline-variant/50 rounded-lg p-4 space-y-2">
                       <span class="text-xs text-on-surface-variant font-code-sm block mb-2 uppercase tracking-wider">Self-Check Protocols</span>
                       <div class="flex items-center gap-2 text-xs">
-                        <span class="material-symbols-outlined text-[16px] text-secondary">check_circle</span>
+                        <span class="material-symbols-outlined text-[16px]" [class.text-secondary]="ref.selfCheck.explainWithoutNotes" [class.text-outline]="!ref.selfCheck.explainWithoutNotes">
+                          {{ ref.selfCheck.explainWithoutNotes ? 'check_circle' : 'radio_button_unchecked' }}
+                        </span>
                         <span>Explained without notes</span>
                       </div>
                       <div class="flex items-center gap-2 text-xs">
-                        <span class="material-symbols-outlined text-[16px] text-secondary">check_circle</span>
+                        <span class="material-symbols-outlined text-[16px]" [class.text-secondary]="ref.selfCheck.identifyEdgeCases" [class.text-outline]="!ref.selfCheck.identifyEdgeCases">
+                          {{ ref.selfCheck.identifyEdgeCases ? 'check_circle' : 'radio_button_unchecked' }}
+                        </span>
                         <span>Identified edge cases</span>
                       </div>
                       <div class="flex items-center gap-2 text-xs">
