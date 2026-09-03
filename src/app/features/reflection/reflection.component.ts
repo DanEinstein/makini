@@ -14,7 +14,7 @@ import { ReflectionInputMode, SelfCheckProtocol } from '../../core/models/sessio
   standalone: true,
   imports: [FormsModule, SideNavComponent, TopBarComponent, ApiKeyModalComponent],
   template: `
-    <div class="bg-background text-on-background font-body-md flex h-screen overflow-hidden selection:bg-primary-container selection:text-on-primary-container">
+    <div class="reflection-page reflection-copy bg-background text-on-background font-body-md flex h-screen overflow-hidden selection:bg-primary-container selection:text-on-primary-container">
       <!-- Side Navigation -->
       <app-side-nav class="hidden md:flex" />
 
@@ -31,34 +31,34 @@ import { ReflectionInputMode, SelfCheckProtocol } from '../../core/models/sessio
         <main class="flex-1 mt-16 pt-8 pb-20 px-4 md:px-margin-desktop">
           <div class="max-w-container-max mx-auto">
             <!-- State Header -->
-            <div class="mb-8 border-l-2 border-primary pl-6">
-              <p class="font-code-sm text-code-sm text-primary mb-1 uppercase tracking-widest">Phase 03 // Integration</p>
-              <h2 class="font-display-lg text-headline-lg md:text-display-lg text-on-surface leading-tight font-bold">
+            <div class="mb-8 border-l-4 border-[#a4508b] pl-6">
+              <p class="reflection-accent font-inter text-sm font-semibold mb-1 uppercase tracking-widest">Reflection</p>
+              <h2 class="font-display-lg text-headline-lg md:text-display-lg leading-tight font-bold">
                 Timer Complete.<br />
-                <span class="text-on-surface-variant font-normal">Time to reflect.</span>
+                <span class="reflection-muted font-semibold">Time to reflect.</span>
               </h2>
             </div>
 
             <!-- Bento Grid Layout -->
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
               <!-- Left Column: Rich Text Synthesis Editor (8 cols) -->
-              <div class="lg:col-span-8 bg-surface-container/40 backdrop-blur-xl border border-outline-variant/30 shadow-lg rounded-xl p-6 md:p-8 flex flex-col">
+              <div class="lg:col-span-8 reflection-card rounded-xl p-6 md:p-8 flex flex-col">
                 <div class="flex items-center justify-between mb-4">
                   <div>
-                    <h3 class="font-headline-md text-headline-md text-on-surface font-semibold">Explain what you learned in your own words</h3>
-                    <p class="text-xs text-on-surface-variant mt-0.5">Topic: <strong class="text-primary">{{ sessionService.activeSession()?.topic }}</strong></p>
+                    <h3 class="font-headline-md text-headline-md font-semibold">Explain what you learned in your own words</h3>
+                    <p class="text-sm reflection-muted mt-0.5">Topic: <strong class="reflection-accent">{{ sessionService.activeSession()?.topic }}</strong></p>
                   </div>
-                  <span class="material-symbols-outlined text-outline-variant" aria-hidden="true">edit_note</span>
+                  <span class="material-symbols-outlined reflection-muted" aria-hidden="true">edit_note</span>
                 </div>
 
                 <!-- Editor Shell -->
-                <div class="flex-1 flex flex-col border border-outline-variant/50 rounded-lg bg-surface/60 backdrop-blur-sm focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all duration-150">
+                <div class="reflection-editor flex-1 flex flex-col rounded-lg focus-within:ring-2 focus-within:ring-[#a4508b] transition-all duration-150">
                   <!-- Toolbar -->
-                  <div class="flex items-center gap-1.5 p-2 border-b border-outline-variant/50 bg-surface-container-low/60 rounded-t-lg">
+                  <div class="flex items-center gap-1.5 p-2 border-b border-[#c994ae] bg-[#f8edf2] rounded-t-lg">
                     <button
                       type="button"
                       (click)="formatBold()"
-                      class="p-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded transition-colors"
+                      class="p-1.5 reflection-muted hover:text-[#2f004f] hover:bg-[#efd5e1] rounded transition-colors"
                       title="Bold text"
                     >
                       <span class="material-symbols-outlined text-[18px]">format_bold</span>
@@ -66,16 +66,16 @@ import { ReflectionInputMode, SelfCheckProtocol } from '../../core/models/sessio
                     <button
                       type="button"
                       (click)="formatItalic()"
-                      class="p-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded transition-colors"
+                      class="p-1.5 reflection-muted hover:text-[#2f004f] hover:bg-[#efd5e1] rounded transition-colors"
                       title="Italic text"
                     >
                       <span class="material-symbols-outlined text-[18px]">format_italic</span>
                     </button>
-                    <div class="w-px h-4 bg-outline-variant mx-1"></div>
+                    <div class="w-px h-4 bg-[#c994ae] mx-1"></div>
                     <button
                       type="button"
                       (click)="formatBulletList()"
-                      class="p-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded transition-colors"
+                      class="p-1.5 reflection-muted hover:text-[#2f004f] hover:bg-[#efd5e1] rounded transition-colors"
                       title="Bullet list"
                     >
                       <span class="material-symbols-outlined text-[18px]">format_list_bulleted</span>
@@ -83,12 +83,12 @@ import { ReflectionInputMode, SelfCheckProtocol } from '../../core/models/sessio
                     <button
                       type="button"
                       (click)="formatCode()"
-                      class="p-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded transition-colors"
+                      class="p-1.5 reflection-muted hover:text-[#2f004f] hover:bg-[#efd5e1] rounded transition-colors"
                       title="Code snippet"
                     >
                       <span class="material-symbols-outlined text-[18px]">code</span>
                     </button>
-                    <div class="w-px h-4 bg-outline-variant mx-1"></div>
+                    <div class="w-px h-4 bg-[#c994ae] mx-1"></div>
                     <button
                       type="button"
                       (click)="toggleRecording()"
@@ -96,16 +96,15 @@ import { ReflectionInputMode, SelfCheckProtocol } from '../../core/models/sessio
                       class="p-1.5 rounded transition-colors flex items-center gap-1.5"
                       [class.text-error]="isRecording()"
                       [class.bg-error/10]="isRecording()"
-                      [class.text-on-surface-variant]="!isRecording()"
-                      [class.hover:text-on-surface]="!isRecording()"
-                      [class.hover:bg-surface-container-high]="!isRecording()"
+                      [class.reflection-muted]="!isRecording()"
+                      [class.hover:bg-[#efd5e1]]="!isRecording()"
                       [title]="isRecording() ? 'Stop recording' : 'Record spoken reflection'"
                     >
                       <span class="material-symbols-outlined text-[18px]">{{ isRecording() ? 'stop_circle' : 'mic' }}</span>
                       @if (isRecording()) {
-                        <span class="font-code-sm text-[11px] tabular-nums">{{ formattedRecordTime() }}</span>
+                        <span class="font-inter text-[11px] tabular-nums">{{ formattedRecordTime() }}</span>
                       } @else if (isTranscribing()) {
-                        <span class="font-code-sm text-[11px]">Transcribing…</span>
+                        <span class="font-inter text-[11px]">Transcribing…</span>
                       }
                     </button>
                   </div>
@@ -113,132 +112,126 @@ import { ReflectionInputMode, SelfCheckProtocol } from '../../core/models/sessio
                   <!-- Textarea -->
                   <textarea
                     #editorArea
-                    [(ngModel)]="reflectionText"
+                    [ngModel]="reflectionText()"
+                    (ngModelChange)="reflectionText.set($event)"
                     id="reflectionTextarea"
-                    class="w-full flex-1 bg-transparent border-none focus:ring-0 text-body-lg font-body-lg text-on-surface placeholder-on-surface-variant/50 p-5 resize-none min-h-[320px] outline-none"
+                    class="w-full flex-1 bg-transparent border-none focus:ring-0 p-5 resize-none min-h-[320px] outline-none"
                     placeholder="Start typing your synthesis here — or tap the mic to speak it. Focus on the core concepts, boundary cases, and how they connect..."
                   ></textarea>
                 </div>
                 @if (recordError()) {
-                  <p class="mt-3 text-xs text-error font-code-sm">{{ recordError() }}</p>
+                  <p class="mt-3 text-sm text-error font-inter">{{ recordError() }}</p>
                 }
 
-                <!-- Scratchpad Reference Accordion / Helper -->
                 @if (sessionService.activeSession()?.scratchpadNotes; as notes) {
-                  <div class="mt-4 p-4 rounded bg-[#0D1117] border border-outline-variant/60">
-                    <div class="flex items-center gap-2 text-xs font-code-sm text-primary mb-1">
+                  <div class="mt-4 p-4 rounded-lg bg-[#f3e5eb] border border-[#c994ae]">
+                    <div class="flex items-center gap-2 text-sm font-inter reflection-accent mb-1">
                       <span class="material-symbols-outlined text-[16px]">history_edu</span>
                       Your Session Scratchpad Notes:
                     </div>
-                    <p class="text-xs text-on-surface-variant font-code-sm whitespace-pre-wrap">{{ notes }}</p>
+                    <p class="text-sm reflection-copy whitespace-pre-wrap">{{ notes }}</p>
                   </div>
                 }
               </div>
 
               <!-- Right Column: Self-Check & Confidence Rating (4 cols) -->
               <div class="lg:col-span-4 flex flex-col gap-6">
-                <!-- Self-Check Checklist Card -->
-                <div class="bg-surface-container/40 backdrop-blur-xl border border-outline-variant/30 shadow-lg rounded-xl p-6">
-                  <h3 class="font-label-md text-label-md text-primary uppercase tracking-wider mb-5 font-semibold flex items-center gap-2">
+                <div class="reflection-card rounded-xl p-6">
+                  <h3 class="font-label-md text-label-md reflection-accent uppercase tracking-wider mb-5 font-semibold flex items-center gap-2">
                     <span class="material-symbols-outlined text-[18px]">checklist</span>
                     Self-Check Protocol
                   </h3>
                   
                   <div class="flex flex-col gap-4">
-                    <!-- Check 1 -->
                     <label class="flex items-start gap-3.5 group cursor-pointer">
                       <div class="relative flex items-center justify-center mt-0.5">
                         <input
                           type="checkbox"
                           [(ngModel)]="selfCheck.explainWithoutNotes"
-                          class="peer appearance-none w-5 h-5 border border-outline-variant rounded-sm bg-surface checked:bg-secondary checked:border-secondary transition-colors cursor-pointer"
+                          class="peer appearance-none w-5 h-5 border-2 border-[#a4508b] rounded-sm bg-white checked:bg-[#5f0a87] checked:border-[#5f0a87] transition-colors cursor-pointer"
                         />
-                        <span class="material-symbols-outlined absolute text-on-secondary opacity-0 peer-checked:opacity-100 pointer-events-none text-[16px] font-bold">check</span>
+                        <span class="material-symbols-outlined absolute text-white opacity-0 peer-checked:opacity-100 pointer-events-none text-[16px] font-bold">check</span>
                       </div>
-                      <span class="font-body-md text-body-md text-sm text-on-surface group-hover:text-primary transition-colors leading-snug">
+                      <span class="font-body-md text-sm reflection-copy group-hover:text-[#7a1468] transition-colors leading-snug">
                         Can I explain this without looking at my notes?
                       </span>
                     </label>
 
-                    <div class="h-px w-full bg-outline-variant/40"></div>
+                    <div class="h-px w-full bg-[#e2c3d0]"></div>
 
-                    <!-- Check 2 -->
                     <label class="flex items-start gap-3.5 group cursor-pointer">
                       <div class="relative flex items-center justify-center mt-0.5">
                         <input
                           type="checkbox"
                           [(ngModel)]="selfCheck.identifyEdgeCases"
-                          class="peer appearance-none w-5 h-5 border border-outline-variant rounded-sm bg-surface checked:bg-secondary checked:border-secondary transition-colors cursor-pointer"
+                          class="peer appearance-none w-5 h-5 border-2 border-[#a4508b] rounded-sm bg-white checked:bg-[#5f0a87] checked:border-[#5f0a87] transition-colors cursor-pointer"
                         />
-                        <span class="material-symbols-outlined absolute text-on-secondary opacity-0 peer-checked:opacity-100 pointer-events-none text-[16px] font-bold">check</span>
+                        <span class="material-symbols-outlined absolute text-white opacity-0 peer-checked:opacity-100 pointer-events-none text-[16px] font-bold">check</span>
                       </div>
-                      <span class="font-body-md text-body-md text-sm text-on-surface group-hover:text-primary transition-colors leading-snug">
+                      <span class="font-body-md text-sm reflection-copy group-hover:text-[#7a1468] transition-colors leading-snug">
                         Did I identify the core edge cases or exceptions?
                       </span>
                     </label>
 
-                    <div class="h-px w-full bg-outline-variant/40"></div>
+                    <div class="h-px w-full bg-[#e2c3d0]"></div>
 
-                    <!-- Check 3 -->
                     <label class="flex items-start gap-3.5 group cursor-pointer">
                       <div class="relative flex items-center justify-center mt-0.5">
                         <input
                           type="checkbox"
                           [(ngModel)]="selfCheck.teachSomeoneElse"
-                          class="peer appearance-none w-5 h-5 border border-outline-variant rounded-sm bg-surface checked:bg-secondary checked:border-secondary transition-colors cursor-pointer"
+                          class="peer appearance-none w-5 h-5 border-2 border-[#a4508b] rounded-sm bg-white checked:bg-[#5f0a87] checked:border-[#5f0a87] transition-colors cursor-pointer"
                         />
-                        <span class="material-symbols-outlined absolute text-on-secondary opacity-0 peer-checked:opacity-100 pointer-events-none text-[16px] font-bold">check</span>
+                        <span class="material-symbols-outlined absolute text-white opacity-0 peer-checked:opacity-100 pointer-events-none text-[16px] font-bold">check</span>
                       </div>
-                      <span class="font-body-md text-body-md text-sm text-on-surface group-hover:text-primary transition-colors leading-snug">
+                      <span class="font-body-md text-sm reflection-copy group-hover:text-[#7a1468] transition-colors leading-snug">
                         Could I teach this concept to someone else right now?
                       </span>
                     </label>
                   </div>
                 </div>
 
-                <!-- Confidence Rating Card -->
-                <div class="bg-surface-container/40 backdrop-blur-xl border border-outline-variant/30 shadow-lg rounded-xl p-6">
-                  <h3 class="font-label-md text-label-md text-primary uppercase tracking-wider mb-4 font-semibold flex items-center gap-2">
+                <div class="reflection-card rounded-xl p-6">
+                  <h3 class="font-label-md text-label-md reflection-accent uppercase tracking-wider mb-4 font-semibold flex items-center gap-2">
                     <span class="material-symbols-outlined text-[18px]">speed</span>
                     Rate your confidence
                   </h3>
                   
-                  <div class="flex justify-between items-center bg-surface border border-outline-variant rounded-lg p-2" role="group" aria-label="Confidence score from 1 to 5">
+                  <div class="flex justify-between items-center bg-[#f8edf2] border border-[#c994ae] rounded-lg p-2" role="group" aria-label="Confidence score from 1 to 5">
                     @for (val of [1, 2, 3, 4, 5]; track val) {
                       <button
                         type="button"
                         (click)="setConfidence(val)"
-                        [class.bg-primary]="confidenceRating() === val"
-                        [class.text-on-primary]="confidenceRating() === val"
+                        [class.bg-[#5f0a87]]="confidenceRating() === val"
+                        [class.text-white]="confidenceRating() === val"
                         [class.font-bold]="confidenceRating() === val"
-                        [class.text-on-surface-variant]="confidenceRating() !== val"
-                        class="w-10 h-10 rounded text-center font-headline-md hover:bg-surface-container-high transition-colors focus:outline-none"
+                        [class.reflection-muted]="confidenceRating() !== val"
+                        class="w-10 h-10 rounded text-center font-headline-md hover:bg-[#efd5e1] transition-colors focus:outline-none"
                       >
                         {{ val }}
                       </button>
                     }
                   </div>
                   
-                  <div class="flex justify-between mt-2 text-on-surface-variant font-code-sm text-xs opacity-75 px-1">
+                  <div class="flex justify-between mt-2 reflection-muted font-inter text-xs px-1">
                     <span>1 - Shaky</span>
                     <span>3 - Moderate</span>
                     <span>5 - Mastered</span>
                   </div>
                 </div>
 
-                <!-- Primary CTA -->
                 <button
                   type="button"
                   (click)="onSubmitReflection()"
                   [disabled]="!isSubmitEnabled()"
-                  class="mt-2 w-full bg-primary hover:bg-primary-fixed-dim disabled:opacity-40 disabled:cursor-not-allowed text-on-primary font-label-md text-label-md font-bold py-5 px-6 rounded flex items-center justify-center gap-3 transition-all shadow-[0_0_20px_rgba(255,215,158,0.15)] hover:shadow-[0_0_25px_rgba(255,215,158,0.25)]"
+                  class="mt-2 w-full bg-[#5f0a87] hover:bg-[#a4508b] disabled:opacity-40 disabled:cursor-not-allowed text-white font-label-md text-label-md font-bold py-5 px-6 rounded flex items-center justify-center gap-3 transition-all"
                 >
                   <span>Submit Reflection &amp; Unlock AI Tutor</span>
                   <span class="material-symbols-outlined" aria-hidden="true">lock_open</span>
                 </button>
 
                 @if (!isSubmitEnabled()) {
-                  <p class="text-xs text-center text-on-surface-variant/80 font-code-sm">
+                  <p class="text-sm text-center reflection-muted font-inter">
                     * Written explanation and checklist items are required to unlock AI.
                   </p>
                 }
@@ -247,7 +240,6 @@ import { ReflectionInputMode, SelfCheckProtocol } from '../../core/models/sessio
           </div>
         </main>
       </div>
-
       <!-- Runtime status modal -->
       @if (showApiKeyModal()) {
         <app-api-key-modal (close)="showApiKeyModal.set(false)" />
@@ -261,7 +253,7 @@ export class ReflectionComponent implements OnDestroy {
   private http = inject(HttpClient);
 
   protected reflectionText = signal<string>('');
-  protected confidenceRating = signal<number>(4);
+  protected confidenceRating = signal<number>(0);
   protected showApiKeyModal = signal<boolean>(false);
   protected isRecording = signal(false);
   protected isTranscribing = signal(false);

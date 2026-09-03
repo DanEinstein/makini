@@ -43,25 +43,29 @@ __screenshots__/
 .DS_Store
 Thumbs.db
 
-# Sensitive local configuration
+# Sensitive local configuration — never commit real keys
 .env
 .env.*
-!.env.example
-!.env.template
+.envrc
 .env.example
-
-# Local AI/runtime secrets
-secrets/
-credentials/
+!.env.template
+*.env.bak
 *.pem
 *.key
 *.p12
 *.pfx
 *.crt
+*.p8
 id_rsa
 id_rsa.pub
+secrets/
+credentials/
+certs/
+.clerk/
 
 # Service/account credentials
 *credentials*.json
 *service-account*.json
 *secret*.json
+google-services.json
+GoogleService-Info.plist

@@ -28,33 +28,12 @@ import { ApiKeyModalComponent } from '../../shared/components/api-key-modal/api-
             </p>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            @for (item of badges; track item.id) {
-              <div class="bg-[#161B22]/60 backdrop-blur-md border border-white/10 rounded-xl p-6 flex flex-col gap-4 relative overflow-hidden"
-                   [class.border-primary]="item.unlocked" [class.opacity-60]="!item.unlocked">
-                <div class="flex items-center justify-between">
-                  <div class="w-12 h-12 rounded-lg flex items-center justify-center"
-                       [class.bg-primary-container]="item.unlocked" [class.text-on-primary-container]="item.unlocked"
-                       [class.bg-surface-container-high]="!item.unlocked" [class.text-on-surface-variant]="!item.unlocked">
-                    <span class="material-symbols-outlined text-[28px] fill-1">{{ item.icon }}</span>
-                  </div>
-                  <span class="font-code-sm text-xs px-2 py-0.5 rounded"
-                        [class.bg-secondary/20]="item.unlocked" [class.text-secondary]="item.unlocked"
-                        [class.bg-surface-container]="!item.unlocked" [class.text-outline]="!item.unlocked">
-                    {{ item.unlocked ? 'Unlocked' : 'Locked' }}
-                  </span>
-                </div>
-
-                <div>
-                  <h3 class="font-headline-sm text-on-surface font-semibold text-lg">{{ item.title }}</h3>
-                  <p class="text-xs text-on-surface-variant mt-1 leading-relaxed">{{ item.description }}</p>
-                </div>
-
-                <div class="mt-auto pt-4 border-t border-outline-variant/30 flex justify-between items-center text-xs font-code-sm text-on-surface-variant">
-                  <span>{{ item.progress }}</span>
-                </div>
-              </div>
-            }
+          <div class="panel-card rounded-xl p-10 text-center">
+            <span class="material-symbols-outlined text-4xl text-primary mb-3">military_tech</span>
+            <p class="text-on-surface font-semibold">Achievements are not wired yet.</p>
+            <p class="text-sm text-on-surface-variant mt-2 max-w-md mx-auto">
+              Badges will appear here from your real session history. Nothing is unlocked until that ships.
+            </p>
           </div>
         </main>
       </div>
@@ -67,39 +46,4 @@ import { ApiKeyModalComponent } from '../../shared/components/api-key-modal/api-
 })
 export class AchievementsComponent {
   protected showApiKeyModal = signal<boolean>(false);
-
-  badges = [
-    {
-      id: 'b1',
-      title: '5-Day Deep Focus Streak',
-      description: 'Maintained uninterrupted study sessions across 5 consecutive calendar days.',
-      icon: 'local_fire_department',
-      unlocked: true,
-      progress: 'Completed (5 / 5 days)'
-    },
-    {
-      id: 'b2',
-      title: 'Zero-AI Purist',
-      description: 'Completed a 60-minute session without breaking focus or opening AI tools early.',
-      icon: 'lock',
-      unlocked: true,
-      progress: 'Completed (60 / 60 mins)'
-    },
-    {
-      id: 'b3',
-      title: 'Synthesis Master',
-      description: 'Wrote over 10 verified reflections answering all 3 self-check criteria.',
-      icon: 'psychiatry',
-      unlocked: true,
-      progress: '12 / 10 reflections'
-    },
-    {
-      id: 'b4',
-      title: 'Mastery Level 5',
-      description: 'Attain a 5/5 confidence rating on 5 complex concepts.',
-      icon: 'military_tech',
-      unlocked: false,
-      progress: '1 / 5 concepts'
-    }
-  ];
 }

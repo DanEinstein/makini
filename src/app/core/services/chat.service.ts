@@ -37,10 +37,6 @@ export class ChatService {
 
   private abortController: AbortController | null = null;
 
-  constructor() {
-    this.initDefaultMessages();
-  }
-
   setModel(model: SupportedAIModel): void {
     this.selectedModel.set(model);
   }
@@ -123,18 +119,6 @@ export class ChatService {
         return of({ ok: false, model: this.selectedModel(), error: message });
       })
     );
-  }
-
-  private initDefaultMessages(): void {
-    this.messages.set([
-      {
-        id: 'msg_demo_1',
-        role: 'assistant',
-        content: `Welcome to the AI tutor. Complete a focus session, then ask me to test your understanding with drills or edge cases.`,
-        timestamp: Date.now() - 120000,
-        model: 'Llama 3.3 70B'
-      }
-    ]);
   }
 
   private buildRuntimePayload(context?: Session | null): RuntimeChatPayload {

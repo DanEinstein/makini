@@ -32,7 +32,7 @@ import { SessionService } from '../../core/services/session.service';
               <label class="block font-label-md text-label-md text-on-background font-medium" for="topic">
                 Topic or concept to explore
               </label>
-              <div class="relative focus-ring border border-outline-variant rounded bg-[#0D1117] transition-colors duration-150 flex items-center px-4 py-3">
+              <div class="relative focus-ring border border-outline-variant rounded bg-surface transition-colors duration-150 flex items-center px-4 py-3">
                 <span class="material-symbols-outlined text-on-surface-variant mr-3 text-lg" aria-hidden="true">search</span>
                 <input
                   class="w-full bg-transparent border-none text-on-background font-code-sm text-code-sm placeholder:text-on-surface-variant/50 focus:outline-none p-0"
@@ -64,12 +64,12 @@ import { SessionService } from '../../core/services/session.service';
                     type="button"
                     (click)="selectPreset(preset)"
                     [class.border-primary]="selectedDuration() === preset && !isCustom()"
-                    [class.bg-[#21262D]]="selectedDuration() === preset && !isCustom()"
+                    [class.bg-primary-container]="selectedDuration() === preset && !isCustom()"
                     [class.text-primary]="selectedDuration() === preset && !isCustom()"
                     [class.border-outline-variant]="selectedDuration() !== preset || isCustom()"
                     [class.bg-surface]="selectedDuration() !== preset || isCustom()"
                     [class.text-on-background]="selectedDuration() !== preset || isCustom()"
-                    class="rounded border py-3 text-center transition-colors duration-150 hover:bg-[#21262D] focus:outline-none"
+                    class="rounded border py-3 text-center transition-colors duration-150 hover:bg-surface-container-high focus:outline-none"
                   >
                     <span class="font-label-md text-label-md">{{ preset }} min</span>
                   </button>
@@ -80,11 +80,11 @@ import { SessionService } from '../../core/services/session.service';
                   type="button"
                   (click)="toggleCustom()"
                   [class.border-primary]="isCustom()"
-                  [class.bg-[#21262D]]="isCustom()"
+                  [class.bg-primary-container]="isCustom()"
                   [class.text-primary]="isCustom()"
                   [class.border-outline-variant]="!isCustom()"
                   [class.bg-surface]="!isCustom()"
-                  class="rounded border border-dashed py-3 text-center transition-colors duration-150 hover:bg-[#21262D] col-span-2 md:col-span-1 focus:outline-none"
+                  class="rounded border border-dashed py-3 text-center transition-colors duration-150 hover:bg-surface-container-high col-span-2 md:col-span-1 focus:outline-none"
                 >
                   <span class="font-label-md text-label-md">Custom</span>
                 </button>
@@ -102,7 +102,7 @@ import { SessionService } from '../../core/services/session.service';
                     [ngModel]="customMinutes()"
                     (ngModelChange)="customMinutes.set(+$event)"
                     name="customMinutes"
-                    class="w-24 bg-[#0D1117] border border-primary text-on-surface font-code-sm text-sm rounded px-3 py-1.5 focus:outline-none"
+                    class="w-24 bg-surface border border-primary text-on-surface font-inter text-sm rounded px-3 py-1.5 focus:outline-none"
                   />
                   <span class="text-xs text-on-surface-variant font-code-sm">(1 to 180 minutes)</span>
                 </div>

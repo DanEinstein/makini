@@ -1,18 +1,17 @@
 /**
- * Maps Clerk's prebuilt UI onto the Makini palette (see DESIGN.md) so the
- * hosted components match the rest of the dark, focus-first interface.
+ * Maps Clerk's prebuilt UI onto the Makini pastel palette.
  */
 export const clerkAppearance = {
   variables: {
-    colorPrimary: '#FFB224',
-    colorBackground: '#161B22',
-    colorText: '#dfe2eb',
-    colorTextSecondary: '#d6c4ad',
-    colorInputBackground: '#0D1117',
-    colorInputText: '#dfe2eb',
-    colorDanger: '#ffb4ab',
-    colorSuccess: '#4edea3',
-    borderRadius: '0.25rem',
-    fontFamily: 'Inter, sans-serif'
+    colorPrimary: '#a4508b',
+    colorBackground: '#fffafb',
+    colorText: '#2f004f',
+    colorTextSecondary: '#52236e',
+    colorInputBackground: '#ffffff',
+    colorInputText: '#2f004f',
+    colorDanger: '#9f1239',
+    colorSuccess: '#5f0a87',
+    borderRadius: '0.75rem',
+    fontFamily: 'Inter, system-ui, sans-serif'
   }
 } as const;
