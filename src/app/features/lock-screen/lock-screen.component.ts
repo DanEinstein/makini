@@ -16,7 +16,7 @@ import { SourceCardComponent } from '../../shared/components/source-card/source-
         <div class="flex items-center gap-3">
           <span class="material-symbols-outlined text-primary fill-1" aria-hidden="true">target</span>
           <h1 class="font-headline-md text-headline-md text-on-surface font-semibold truncate max-w-xs md:max-w-xl">
-            {{ sessionService.activeSession()?.topic || 'Understanding Concept' }}
+            {{ sessionService.activeSession()?.topic || 'Focus session' }}
           </h1>
         </div>
         <button
@@ -79,10 +79,10 @@ import { SourceCardComponent } from '../../shared/components/source-card/source-
             </p>
 
             <textarea
-              [(ngModel)]="scratchpad"
+              [ngModel]="scratchpad()"
               (ngModelChange)="onScratchpadChange($event)"
-              class="flex-1 w-full bg-surface-dim border border-surface-variant rounded-lg p-4 font-code-sm text-code-sm text-on-surface placeholder:text-outline focus:border-primary-container focus:ring-1 focus:ring-primary-container outline-none resize-none transition-all"
-              placeholder="e.g., How does tail call optimization actually work under the hood? I keep thinking about infinite loops..."
+              class="flex-1 w-full bg-surface-dim border border-surface-variant rounded-lg p-4 font-inter text-sm text-on-surface placeholder:text-on-surface-variant focus:border-primary-container focus:ring-1 focus:ring-primary-container outline-none resize-none transition-all"
+              placeholder="Write questions to ask the tutor after this session..."
             ></textarea>
 
             <div class="mt-4 flex justify-between items-center text-outline font-label-md text-label-md text-xs">

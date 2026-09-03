@@ -30,9 +30,9 @@ html, body {
   margin: 0;
   background: radial-gradient(1200px circle at 0% 0%, #f2dbe4 0%, var(--app-bg) 45%, #f8edf2 100%);
   color: var(--app-text);
-  font-family: 'Inter', sans-serif;
-  font-size: 13px;
-  line-height: 1.45;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
   overflow-x: hidden;
 }
 
@@ -104,6 +104,124 @@ html, body {
   background-color: rgba(255, 255, 255, 0.97);
   border: 1px solid var(--app-border);
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.panel-card {
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  box-shadow: 0 8px 24px rgba(47, 0, 79, 0.05);
+}
+
+.app-top-bar {
+  position: relative;
+  background: linear-gradient(90deg, #5f0a87 0%, #a4508b 52%, #c191a1 100%);
+  box-shadow: 0 10px 28px rgba(95, 10, 135, 0.32);
+  border-bottom: none;
+}
+
+.app-top-bar::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.85), #eabfcb, transparent);
+}
+
+.app-top-bar-title,
+.app-top-bar-link,
+.app-top-bar-sub {
+  color: #fffafb !important;
+}
+
+.app-top-bar-link:hover,
+.app-top-bar-icon:hover {
+  color: #ffeef5 !important;
+  background-color: rgba(255, 255, 255, 0.14);
+}
+
+.app-top-bar-icon {
+  color: rgba(255, 250, 251, 0.88) !important;
+}
+
+.app-top-bar-chip {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.35) !important;
+  color: #fffafb;
+}
+
+.reflection-page {
+  background: linear-gradient(180deg, #f3dce6 0%, #f7eef3 40%, #f4e4ec 100%) !important;
+}
+
+.reflection-page .reflection-copy,
+.reflection-page .reflection-copy * {
+  color: #2f004f !important;
+}
+
+.reflection-page .reflection-muted {
+  color: #5a2a72 !important;
+}
+
+.reflection-page .reflection-accent {
+  color: #7a1468 !important;
+}
+
+.reflection-card {
+  background: #fffafb !important;
+  border: 1px solid #c994ae !important;
+  box-shadow: 0 12px 32px rgba(95, 10, 135, 0.1);
+}
+
+.reflection-editor {
+  background: #ffffff !important;
+  border: 1px solid #c994ae !important;
+}
+
+.reflection-editor textarea {
+  font-family: 'Inter', system-ui, sans-serif !important;
+  font-size: 16px !important;
+  line-height: 1.65 !important;
+  color: #2f004f !important;
+}
+
+.reflection-editor textarea::placeholder {
+  color: #7a4a8c !important;
+  opacity: 1;
+}
+
+.chat-feed {
+  background: #f6e9ef;
+}
+
+.chat-message {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.65;
+  color: #2f004f;
+  font-weight: 450;
+  letter-spacing: 0.01em;
+}
+
+.chat-bubble {
+  background: #ffffff;
+  border: 1px solid var(--app-border);
+  color: #2f004f;
+}
+
+.chat-bubble-user {
+  background: #f3e5eb;
+  border: 1px solid #e2c3d0;
+  color: #2f004f;
+}
+
+.chat-input {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #2f004f;
+  background: #ffffff;
 }
 
 /* Custom Focus Ring */

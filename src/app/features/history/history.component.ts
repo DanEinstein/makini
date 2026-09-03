@@ -43,7 +43,7 @@ import { Session } from '../../core/models/session.model';
 
           <div class="space-y-4">
             @for (session of sessionService.sessionHistory(); track session.id) {
-              <div class="bg-[#161B22]/60 backdrop-blur-md border border-white/10 rounded-xl p-6 transition-all hover:border-outline-variant">
+              <div class="panel-card rounded-xl p-6 transition-all hover:border-primary">
                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-outline-variant/30">
                   <div>
                     <div class="flex items-center gap-3">
@@ -61,7 +61,7 @@ import { Session } from '../../core/models/session.model';
                     <div class="text-right">
                       <span class="text-xs text-on-surface-variant font-code-sm block">Confidence Score</span>
                       <span class="text-secondary font-bold text-sm">
-                        ★ {{ session.reflection?.confidenceRating || 4 }}/5
+                        ★ {{ session.reflection?.confidenceRating ?? '—' }}/5
                       </span>
                     </div>
 
@@ -79,12 +79,12 @@ import { Session } from '../../core/models/session.model';
                 <!-- Reflection Content -->
                 @if (session.reflection; as ref) {
                   <div class="mt-4 grid grid-cols-1 md:grid-cols-12 gap-4 text-sm">
-                    <div class="md:col-span-8 bg-[#0D1117] border border-outline-variant/50 rounded-lg p-4">
+                    <div class="md:col-span-8 bg-surface-dim border border-outline-variant rounded-lg p-4">
                       <span class="text-xs text-primary font-code-sm block mb-1 uppercase tracking-wider">Written Synthesis</span>
                       <p class="text-on-surface leading-relaxed whitespace-pre-wrap">{{ ref.text }}</p>
                     </div>
 
-                    <div class="md:col-span-4 bg-[#0D1117] border border-outline-variant/50 rounded-lg p-4 space-y-2">
+                    <div class="md:col-span-4 bg-surface-dim border border-outline-variant rounded-lg p-4 space-y-2">
                       <span class="text-xs text-on-surface-variant font-code-sm block mb-2 uppercase tracking-wider">Self-Check Protocols</span>
                       <div class="flex items-center gap-2 text-xs">
                         <span class="material-symbols-outlined text-[16px]" [class.text-secondary]="ref.selfCheck.explainWithoutNotes" [class.text-outline]="!ref.selfCheck.explainWithoutNotes">
@@ -109,7 +109,7 @@ import { Session } from '../../core/models/session.model';
                 }
               </div>
             } @empty {
-              <div class="p-12 text-center bg-[#161B22]/40 rounded-xl border border-dashed border-outline-variant">
+              <div class="p-12 text-center panel-card rounded-xl border-dashed">
                 <span class="material-symbols-outlined text-4xl text-on-surface-variant mb-2">history</span>
                 <p class="text-on-surface font-semibold">No completed sessions yet.</p>
                 <p class="text-xs text-on-surface-variant mt-1">Start your first deep study lock to build your cognitive log.</p>

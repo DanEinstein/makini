@@ -24,32 +24,16 @@ import { ApiKeyModalComponent } from '../../shared/components/api-key-modal/api-
               Peer Syntheses & Study Rooms
             </h1>
             <p class="text-sm text-on-surface-variant mt-1">
-              Explore how other learners explain complex mental models without relying on generative shortcuts.
+              Shared reflections from other learners will show up here when community is enabled.
             </p>
           </div>
 
-          <div class="grid grid-cols-1 gap-6">
-            <div class="bg-[#161B22]/60 backdrop-blur-md border border-white/10 rounded-xl p-6 flex flex-col justify-between gap-4">
-              <div>
-                <div class="flex items-center gap-3 mb-2">
-                  <span class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container font-bold flex items-center justify-center text-xs">
-                    JD
-                  </span>
-                  <div>
-                    <h3 class="font-headline-sm text-sm font-semibold text-on-surface">Jordan Diaz</h3>
-                    <p class="text-xs text-on-surface-variant font-code-sm">Topic: Lamport Timers</p>
-                  </div>
-                </div>
-                <p class="text-xs text-on-surface-variant leading-relaxed bg-[#0D1117] p-3 rounded border border-outline-variant/40">
-                  "Lamport clocks preserve event ordering even when physical clocks drift."
-                </p>
-              </div>
-
-              <div class="flex items-center justify-between text-xs font-code-sm text-secondary">
-                <span>Verified 45-min lock</span>
-                <span>★ 5/5</span>
-              </div>
-            </div>
+          <div class="panel-card rounded-xl p-10 text-center">
+            <span class="material-symbols-outlined text-4xl text-primary mb-3">groups</span>
+            <p class="text-on-surface font-semibold">No community posts yet.</p>
+            <p class="text-sm text-on-surface-variant mt-2 max-w-md mx-auto">
+              This space is empty on purpose. There are no sample peers or sample topics.
+            </p>
           </div>
         </main>
       </div>

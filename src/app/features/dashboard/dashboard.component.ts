@@ -20,12 +20,9 @@ import { Session } from '../../core/models/session.model';
   ],
   template: `
     <div class="bg-background text-on-background font-body-md flex h-screen overflow-hidden selection:bg-primary-container selection:text-on-primary-container">
-      <!-- Side Navigation -->
       <app-side-nav class="hidden md:flex" />
 
-      <!-- Main Content Area -->
       <div class="flex-1 ml-0 md:ml-64 flex flex-col h-screen relative overflow-y-auto">
-        <!-- Top App Bar -->
         <app-top-bar
           title="Cognitive Dashboard"
           subtitle="Learning Analytics & Mastery"
@@ -62,7 +59,7 @@ import { Session } from '../../core/models/session.model';
           <!-- Top Analytics Metric Grid -->
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <!-- Stat 1: AI-Free Hours -->
-            <div class="bg-[#161B22]/70 backdrop-blur-md border border-white/10 rounded-lg p-6 flex items-center gap-5">
+            <div class="panel-card rounded-lg p-6 flex items-center gap-5">
               <div class="p-3 bg-surface-container-high rounded-lg text-on-surface-variant">
                 <span class="material-symbols-outlined text-[28px]">timer_off</span>
               </div>
@@ -77,7 +74,7 @@ import { Session } from '../../core/models/session.model';
             </div>
 
             <!-- Stat 2: Streak -->
-            <div class="bg-[#161B22]/70 backdrop-blur-md border border-white/10 rounded-lg p-6 flex items-center gap-5 border-l-2 border-l-primary">
+            <div class="panel-card rounded-lg p-6 flex items-center gap-5 border-l-2 border-l-primary">
               <div class="p-3 bg-primary-container rounded-lg text-on-primary-container">
                 <span class="material-symbols-outlined text-[28px] fill-1">local_fire_department</span>
               </div>
@@ -92,7 +89,7 @@ import { Session } from '../../core/models/session.model';
             </div>
 
             <!-- Stat 3: Topics Mastered -->
-            <div class="bg-[#161B22]/70 backdrop-blur-md border border-white/10 rounded-lg p-6 flex items-center gap-5">
+            <div class="panel-card rounded-lg p-6 flex items-center gap-5">
               <div class="p-3 bg-secondary-fixed-dim/20 rounded-lg text-secondary">
                 <span class="material-symbols-outlined text-[28px]">check_circle</span>
               </div>
@@ -115,7 +112,7 @@ import { Session } from '../../core/models/session.model';
           />
 
           <!-- Bottom Section: Recent Completed Sessions -->
-          <div class="bg-[#161B22]/60 backdrop-blur-md border border-white/10 rounded-lg p-6">
+          <div class="panel-card rounded-lg p-6">
             <div class="flex items-center justify-between mb-5">
               <div>
                 <h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold flex items-center gap-2">
@@ -156,7 +153,7 @@ import { Session } from '../../core/models/session.model';
                               [class.text-secondary]="(s.reflection?.confidenceRating || 0) >= 4"
                               [class.bg-primary/15]="(s.reflection?.confidenceRating || 0) < 4"
                               [class.text-primary]="(s.reflection?.confidenceRating || 0) < 4">
-                          ★ {{ s.reflection?.confidenceRating || 4 }}/5
+                          ★ {{ s.reflection?.confidenceRating ?? '—' }}/5
                         </span>
                       </td>
                       <td class="py-4">
@@ -174,6 +171,12 @@ import { Session } from '../../core/models/session.model';
                           <span class="material-symbols-outlined text-[14px]">smart_toy</span>
                           AI Sparring
                         </button>
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="5" class="py-10 text-center text-on-surface-variant text-sm">
+                        No completed sessions yet. Start a focus session to see it here.
                       </td>
                     </tr>
                   }

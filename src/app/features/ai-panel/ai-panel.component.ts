@@ -49,7 +49,7 @@ import { ConfidenceChartComponent } from '../../shared/components/confidence-cha
           <!-- Top Section: Split Workspace Panel -->
           <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-auto lg:h-[620px]">
             <!-- Left Panel: Your Reflection & Scratchpad (5 cols) -->
-            <div class="lg:col-span-5 bg-[#161B22]/60 backdrop-blur-md border border-white/10 rounded-lg p-6 flex flex-col h-full overflow-hidden">
+            <div class="lg:col-span-5 panel-card rounded-lg p-6 flex flex-col h-full overflow-hidden">
               <h2 class="font-headline-md text-headline-sm md:text-headline-md text-primary mb-5 flex items-center gap-2 font-bold">
                 <span class="material-symbols-outlined">edit_note</span>
                 Your Reflection
@@ -61,8 +61,8 @@ import { ConfidenceChartComponent } from '../../shared/components/confidence-cha
                   <h3 class="font-label-md text-label-md text-on-surface-variant mb-2 uppercase tracking-widest text-xs font-semibold">
                     Submitted Synthesis
                   </h3>
-                  <div class="bg-[#0D1117] border border-outline-variant rounded p-4 text-on-surface font-body-md text-sm leading-relaxed whitespace-pre-wrap">
-                    {{ reflectionText() }}
+                  <div class="bg-surface-dim border border-outline-variant rounded p-4 chat-message leading-relaxed whitespace-pre-wrap">
+                    {{ reflectionText() || 'No reflection submitted for this session yet.' }}
                   </div>
                 </div>
 
@@ -78,7 +78,7 @@ import { ConfidenceChartComponent } from '../../shared/components/confidence-cha
                         <button
                           type="button"
                           (click)="populatePrompt(q)"
-                          class="w-full text-left p-3 border border-[#30363D] rounded bg-[#10141a] hover:bg-surface-container-high transition-colors cursor-pointer border-l-2"
+                          class="w-full text-left p-3 border border-outline-variant rounded bg-surface hover:bg-surface-container-high transition-colors cursor-pointer border-l-2"
                           [class.border-l-secondary]="$index % 2 === 0"
                           [class.border-l-primary]="$index % 2 !== 0"
                         >
@@ -87,7 +87,7 @@ import { ConfidenceChartComponent } from '../../shared/components/confidence-cha
                       }
                     </div>
                   } @else {
-                    <div class="p-3 border border-dashed border-[#30363D] rounded text-xs text-on-surface-variant/70">
+                    <div class="p-3 border border-dashed border-outline-variant rounded text-sm text-on-surface-variant">
                       No scratchpad notes recorded for this session.
                     </div>
                   }
@@ -96,9 +96,9 @@ import { ConfidenceChartComponent } from '../../shared/components/confidence-cha
             </div>
 
             <!-- Right Panel: AI Workspace & Chat (7 cols) -->
-            <div class="lg:col-span-7 bg-[#161B22]/60 backdrop-blur-md border border-white/10 rounded-lg flex flex-col h-full border-l-2 border-l-primary relative overflow-hidden">
+            <div class="lg:col-span-7 panel-card rounded-lg flex flex-col h-full border-l-2 border-l-primary relative overflow-hidden">
               <!-- AI Header -->
-              <div class="p-4 border-b border-white/10 bg-[#21262D]/60 flex items-center justify-between">
+              <div class="p-4 border-b border-outline-variant bg-surface-container flex items-center justify-between">
                 <div class="flex items-center gap-2.5">
                   <span class="material-symbols-outlined text-primary">smart_toy</span>
                   <h2 class="font-label-md text-label-md text-on-surface font-semibold">AI Synthesis & Sparring</h2>
@@ -129,7 +129,12 @@ import { ConfidenceChartComponent } from '../../shared/components/confidence-cha
               </div>
 
               <!-- Chat Feed -->
-              <div #chatContainer class="flex-grow overflow-y-auto p-5 md:p-6 space-y-5 bg-[#0a0e14]/40">
+              <div #chatContainer class="flex-grow overflow-y-auto p-5 md:p-6 space-y-5 chat-feed">
+                @if (chatService.messages().length === 0) {
+                  <p class="chat-message text-on-surface-variant text-center py-10">
+                    Complete a focus session and reflection to start a tutor conversation.
+                  </p>
+                }
                 @for (msg of chatService.messages(); track msg.id) {
                   @if (msg.role === 'assistant') {
                     <!-- AI Message -->
@@ -138,10 +143,10 @@ import { ConfidenceChartComponent } from '../../shared/components/confidence-cha
                         <span class="material-symbols-outlined text-sm fill-1">auto_awesome</span>
                       </div>
                       <div class="flex-1 max-w-[90%]">
-                        <div class="bg-[#161B22] border border-[#30363D] rounded-lg p-4 font-body-md text-on-surface text-sm leading-relaxed border-l-2 border-l-primary">
-                          <p class="whitespace-pre-wrap">{{ msg.content }}</p>
+                        <div class="chat-bubble rounded-lg p-4 border-l-2 border-l-primary">
+                          <p class="chat-message whitespace-pre-wrap">{{ msg.content }}</p>
                         </div>
-                        <span class="text-[10px] font-code-sm text-on-surface-variant/60 mt-1 block pl-1">
+                        <span class="text-xs font-inter text-on-surface-variant mt-1 block pl-1">
                           {{ msg.model || 'AI Tutor' }}
                         </span>
                       </div>
@@ -153,8 +158,8 @@ import { ConfidenceChartComponent } from '../../shared/components/confidence-cha
                         <span class="material-symbols-outlined text-sm text-on-surface-variant">person</span>
                       </div>
                       <div class="flex-1 flex flex-col items-end max-w-[85%]">
-                        <div class="bg-[#21262D] border border-[#30363D] rounded-lg p-4 font-body-md text-on-surface text-sm leading-relaxed">
-                          <p class="whitespace-pre-wrap">{{ msg.content }}</p>
+                        <div class="chat-bubble-user rounded-lg p-4">
+                          <p class="chat-message whitespace-pre-wrap">{{ msg.content }}</p>
                         </div>
                       </div>
                     </div>
@@ -178,7 +183,7 @@ import { ConfidenceChartComponent } from '../../shared/components/confidence-cha
                     (keydown)="onKeyDown($event)"
                     rows="2"
                     placeholder="Ask a clarifying question or test your mental model... (Press Cmd+Enter or Enter to send)"
-                    class="w-full bg-[#0D1117] border border-[#30363D] rounded-lg p-3 pr-12 font-code-sm text-sm text-on-surface focus:outline-none focus:border-primary transition-colors resize-none placeholder:text-on-surface-variant/60"
+                    class="chat-input w-full border border-outline-variant rounded-lg p-3 pr-12 focus:outline-none focus:border-primary transition-colors resize-none placeholder:text-on-surface-variant"
                   ></textarea>
 
                   <button
@@ -205,7 +210,7 @@ import { ConfidenceChartComponent } from '../../shared/components/confidence-cha
               <!-- Stats Cards -->
               <div class="lg:col-span-1 space-y-4">
                 <!-- AI-Free Study -->
-                <div class="bg-[#161B22]/60 backdrop-blur-md border border-white/10 rounded-lg p-5 flex items-start gap-4">
+                <div class="panel-card rounded-lg p-5 flex items-start gap-4">
                   <div class="p-2.5 bg-surface-container-high rounded text-on-surface-variant">
                     <span class="material-symbols-outlined text-[22px]">timer_off</span>
                   </div>
@@ -220,7 +225,7 @@ import { ConfidenceChartComponent } from '../../shared/components/confidence-cha
                 </div>
 
                 <!-- Current Streak -->
-                <div class="bg-[#161B22]/60 backdrop-blur-md border border-white/10 rounded-lg p-5 flex items-start gap-4 border-l-2 border-l-primary">
+                <div class="panel-card rounded-lg p-5 flex items-start gap-4 border-l-2 border-l-primary">
                   <div class="p-2.5 bg-primary-container rounded text-on-primary-container">
                     <span class="material-symbols-outlined text-[22px] fill-1">local_fire_department</span>
                   </div>
@@ -235,7 +240,7 @@ import { ConfidenceChartComponent } from '../../shared/components/confidence-cha
                 </div>
 
                 <!-- Topics Mastered -->
-                <div class="bg-[#161B22]/60 backdrop-blur-md border border-white/10 rounded-lg p-5 flex items-start gap-4">
+                <div class="panel-card rounded-lg p-5 flex items-start gap-4">
                   <div class="p-2.5 bg-secondary-fixed-dim/20 rounded text-secondary">
                     <span class="material-symbols-outlined text-[22px]">check_circle</span>
                   </div>
@@ -283,8 +288,7 @@ export class AiPanelComponent implements OnInit {
   protected runtimeStatusLabel = signal<string>('Checking...');
 
   protected reflectionText = signal<string>(
-    this.sessionService.activeSession()?.reflection?.text ||
-    'Use this space to review your most recent reflection and pressure-test your understanding with the AI tutor.'
+    this.sessionService.activeSession()?.reflection?.text || ''
   );
 
   protected scratchpadQuestions = signal<string[]>([]);
@@ -295,30 +299,15 @@ export class AiPanelComponent implements OnInit {
     const active = this.sessionService.activeSession();
     if (active) {
       void this.chatService.loadSessionChat(active);
-      if (active.scratchpadNotes) {
-        const lines = active.scratchpadNotes
-          .split('\n')
-          .map(l => l.trim())
-          .filter(l => l.length > 0);
-        this.scratchpadQuestions.set(lines.length > 0 ? lines : [
-          'How does observer effect fundamentally alter the state?',
-          'Can I derive the Schrödinger equation from first principles here?'
-        ]);
-      } else {
-        this.scratchpadQuestions.set([
-          'What concept still feels unclear to me?',
-          'Which edge case should I test next?'
-        ]);
-      }
-      
+      const lines = (active.scratchpadNotes || '')
+        .split('\n')
+        .map(l => l.trim())
+        .filter(l => l.length > 0);
+      this.scratchpadQuestions.set(lines);
+
       if (active.reflection?.text) {
         this.reflectionText.set(active.reflection.text);
       }
-    } else {
-      this.scratchpadQuestions.set([
-        'What concept still feels unclear to me?',
-        'Which edge case should I test next?'
-      ]);
     }
   }
 
