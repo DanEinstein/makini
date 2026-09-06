@@ -76,6 +76,7 @@ describe('SessionService', () => {
     const req = httpTesting.expectOne('/api/sessions');
     expect(req.request.method).toBe('POST');
     expect(req.request.body.topic).toBe('Call Stack Optimization');
+    expect(req.request.body.sources).toBeUndefined();
     req.flush({
       session: lockedSession({
         topic: 'Call Stack Optimization',

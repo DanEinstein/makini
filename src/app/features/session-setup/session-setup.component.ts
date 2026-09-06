@@ -129,7 +129,7 @@ import { SessionService } from '../../core/services/session.service';
               <!-- Helper Text -->
               <p class="text-center font-code-sm text-code-sm text-on-surface-variant mt-4 flex items-center justify-center gap-1.5 opacity-80">
                 <span class="material-symbols-outlined text-[14px]" aria-hidden="true">info</span>
-                Pomodoro lock: AI stays off until the timer ends. Then Feynman reflection unlocks the tutor.
+                Lock-in gathers topic reading links (no AI sites). AI stays off until timer and reflection finish.
               </p>
             </div>
           </form>

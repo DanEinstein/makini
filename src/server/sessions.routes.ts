@@ -7,6 +7,7 @@ import { getDb, IS_DATABASE_CONFIGURED } from './db/client';
 import { chatMessages, reflections, sessions } from './db/schema';
 import { ensureUser } from './db/users';
 import { toApiSession, type ReflectionRow, type SessionRow } from './serialize';
+import { searchTopicSources } from './topic-sources';
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -136,6 +137,8 @@ export function createSessionRouter(): Router {
       return;
     }
 
+    const sources = await searchTopicSources(topic);
+
     const [created] = await getDb()
       .insert(sessions)
       .values({
@@ -145,7 +148,7 @@ export function createSessionRouter(): Router {
         startedAt: new Date(),
         status: 'locked',
         scratchpadNotes: '',
-        sources: parseSources(req.body?.sources),
+        sources: sources.length > 0 ? sources : DEFAULT_SOURCES,
       })
       .returning();
 
