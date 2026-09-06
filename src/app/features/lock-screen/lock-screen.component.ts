@@ -43,6 +43,7 @@ import { SourceCardComponent } from '../../shared/components/source-card/source-
             <app-timer-ring
               [formattedTime]="sessionService.formattedTime()"
               [progressPercentage]="sessionService.progressPercentage()"
+              label="POMODORO"
             />
 
             <!-- Visual Badge -->

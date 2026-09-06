@@ -1,4 +1,5 @@
 import type { Session, SessionReflection } from '../app/core/models/session.model';
+import { toEpochMs } from '../shared/epoch';
 import type { reflections, sessions } from './db/schema';
 
 export type SessionRow = typeof sessions.$inferSelect;
@@ -17,7 +18,7 @@ export function toApiReflection(row: ReflectionRow): SessionReflection {
       teachSomeoneElse: row.teachSomeoneElse,
     },
     confidenceRating: row.confidenceRating,
-    submittedAt: row.submittedAt.getTime(),
+    submittedAt: toEpochMs(row.submittedAt),
     inputMode: row.inputMode,
   };
 }
@@ -27,8 +28,8 @@ export function toApiSession(row: SessionRow, reflection?: ReflectionRow | null)
     id: row.id,
     topic: row.topic,
     plannedMinutes: row.plannedMinutes,
-    startedAt: row.startedAt.getTime(),
-    endedAt: row.endedAt?.getTime(),
+    startedAt: toEpochMs(row.startedAt),
+    endedAt: row.endedAt ? toEpochMs(row.endedAt) : undefined,
     status: row.status,
     scratchpadNotes: row.scratchpadNotes,
     sources: row.sources,
