@@ -1,5 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { SessionService } from '../../core/services/session.service';
 
@@ -58,7 +59,7 @@ import { SessionService } from '../../core/services/session.service';
               </div>
 
               <!-- Duration Chips Grid -->
-              <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+              <div class="grid grid-cols-2 md:grid-cols-6 gap-3">
                 @for (preset of durationPresets; track preset) {
                   <button
                     type="button"
@@ -117,14 +118,18 @@ import { SessionService } from '../../core/services/session.service';
                 class="w-full bg-[#ffb224] hover:bg-[#ffba47] disabled:opacity-50 text-[#000000] font-label-md text-label-md font-bold py-4 rounded transition-colors duration-150 flex justify-center items-center gap-2 group shadow-lg"
               >
                 <span class="material-symbols-outlined fill-1" aria-hidden="true">lock</span>
-                Lock In & Start Session
+                {{ starting() ? 'Locking in…' : 'Lock In & Start Session' }}
                 <span class="material-symbols-outlined group-hover:translate-x-1 transition-transform" aria-hidden="true">arrow_forward</span>
               </button>
+
+              @if (startError()) {
+                <p class="text-center text-sm text-red-700 mt-3" role="alert">{{ startError() }}</p>
+              }
 
               <!-- Helper Text -->
               <p class="text-center font-code-sm text-code-sm text-on-surface-variant mt-4 flex items-center justify-center gap-1.5 opacity-80">
                 <span class="material-symbols-outlined text-[14px]" aria-hidden="true">info</span>
-                AI and distractions will be locked until the timer ends.
+                Pomodoro lock: AI stays off until the timer ends. Then Feynman reflection unlocks the tutor.
               </p>
             </div>
           </form>
@@ -138,12 +143,13 @@ export class SessionSetupComponent {
   private router = inject(Router);
 
   protected topic = signal<string>('');
-  protected durationPresets = [15, 30, 45, 60];
-  protected selectedDuration = signal<number>(30);
+  protected durationPresets = [15, 25, 30, 45, 60];
+  protected selectedDuration = signal<number>(25);
   protected isCustom = signal<boolean>(false);
   protected customMinutes = signal<number>(25);
 
   protected starting = signal(false);
+  protected startError = signal('');
 
   selectPreset(preset: number): void {
     this.isCustom.set(false);
@@ -165,6 +171,7 @@ export class SessionSetupComponent {
 
     const duration = this.isCustom() ? this.customMinutes() : this.selectedDuration();
     this.starting.set(true);
+    this.startError.set('');
     try {
       const session = await this.sessionService.startSession(this.topic(), duration);
       if (session.status === 'reflecting') {
@@ -174,8 +181,25 @@ export class SessionSetupComponent {
       await this.router.navigate(['/session/lock']);
     } catch (error) {
       console.error('[makini] Could not start a focus session.', error);
+      this.startError.set(this.messageFor(error));
     } finally {
       this.starting.set(false);
     }
+  }
+
+  private messageFor(error: unknown): string {
+    if (error instanceof HttpErrorResponse) {
+      const body = error.error as { error?: string; hint?: string } | string | null;
+      if (body && typeof body === 'object' && typeof body.error === 'string') {
+        return body.hint ? `${body.error} ${body.hint}` : body.error;
+      }
+      if (error.status === 0) {
+        return 'Could not reach the server. Check your connection and try again.';
+      }
+      if (error.status === 401) {
+        return 'Sign in to start a focus session.';
+      }
+    }
+    return 'Could not start the focus session. Try again.';
   }
 }

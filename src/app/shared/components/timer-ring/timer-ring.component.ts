@@ -26,7 +26,7 @@ import { Component, input, computed } from '@angular/core';
 
       <!-- Center Countdown Display -->
       <div class="z-10 flex flex-col items-center justify-center">
-        <span class="font-display-lg text-display-lg text-primary tracking-tighter tabular-nums font-bold">
+        <span class="font-display-lg text-display-lg text-on-surface tracking-tighter tabular-nums font-bold">
           {{ formattedTime() }}
         </span>
         @if (label()) {

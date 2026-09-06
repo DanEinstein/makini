@@ -2,7 +2,6 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { isPlatformBrowser } from '@angular/common';
 import {
   Injectable,
-  NgZone,
   OnDestroy,
   PLATFORM_ID,
   computed,
@@ -13,6 +12,7 @@ import {
 } from '@angular/core';
 import { ClerkService } from 'ngx-clerk';
 import { firstValueFrom } from 'rxjs';
+import { toEpochMs } from '../../../shared/epoch';
 import { DEFAULT_SOURCES } from '../../../shared/session-defaults';
 import { Session, SessionReflection, SourceLink } from '../models/session.model';
 
@@ -35,7 +35,6 @@ interface SessionListResponse {
 })
 export class SessionService implements OnDestroy {
   private platformId = inject(PLATFORM_ID);
-  private ngZone = inject(NgZone);
   private http = inject(HttpClient);
   private clerk = inject(ClerkService, { optional: true });
   private isBrowser = isPlatformBrowser(this.platformId);
@@ -45,6 +44,7 @@ export class SessionService implements OnDestroy {
   private endingInFlight = false;
   private lastSignedIn: boolean | null = null;
   private hydrateChain: Promise<void> = Promise.resolve();
+  private hydrateGen = 0;
   private readyResolve!: () => void;
   private markedReady = false;
   private readonly ready = new Promise<void>(resolve => {
@@ -131,6 +131,7 @@ export class SessionService implements OnDestroy {
       return;
     }
 
+    const gen = ++this.hydrateGen;
     this.isHydrating.set(true);
     try {
       await this.importLegacyLocalData();
@@ -140,13 +141,19 @@ export class SessionService implements OnDestroy {
         firstValueFrom(this.http.get<SessionListResponse>('/api/sessions'))
       ]);
 
+      if (gen !== this.hydrateGen) {
+        return;
+      }
+
       this.activeSession.set(activeRes.session);
       this.sessionHistory.set(historyRes.sessions ?? []);
       this.initTimerFromActiveSession();
     } catch (error) {
       console.error('[makini] Failed to load sessions from the server.', error);
     } finally {
-      this.isHydrating.set(false);
+      if (gen === this.hydrateGen) {
+        this.isHydrating.set(false);
+      }
       this.lastSignedIn = true;
       this.markReady();
     }
@@ -155,31 +162,42 @@ export class SessionService implements OnDestroy {
   async startSession(
     topic: string,
     plannedMinutes: number,
-    customSources?: SourceLink[]
+    customSources?: SourceLink[],
+    retried = false
   ): Promise<Session> {
+    if (!this.markedReady) {
+      await this.whenReady();
+    }
+    this.hydrateGen++;
     this.stopTimer();
 
+    const body = {
+      topic: topic.trim() || 'Deep Focus Exploration',
+      plannedMinutes: plannedMinutes || 25,
+      sources: customSources && customSources.length > 0 ? customSources : DEFAULT_SOURCES
+    };
+
     try {
-      const res = await firstValueFrom(
-        this.http.post<SessionResponse>('/api/sessions', {
-          topic: topic.trim() || 'Deep Focus Exploration',
-          plannedMinutes: plannedMinutes || 25,
-          sources: customSources && customSources.length > 0 ? customSources : DEFAULT_SOURCES
-        })
-      );
-      const session = res.session!;
-      this.activeSession.set(session);
-      this.remainingSeconds.set(session.plannedMinutes * 60);
-      this.startTimer(session.startedAt, session.plannedMinutes);
-      return session;
+      const res = await firstValueFrom(this.http.post<SessionResponse>('/api/sessions', body));
+      return this.activateLockedSession(res.session!, true);
     } catch (error) {
       const conflict = this.conflictSession(error);
-      if (conflict) {
-        this.activeSession.set(conflict);
-        this.initTimerFromActiveSession();
-        return conflict;
+      if (!conflict) {
+        throw error;
       }
-      throw error;
+
+      if (!retried && conflict.status === 'locked' && this.hasTimerExpired(conflict)) {
+        await this.persistEnd(conflict);
+        return this.startSession(topic, plannedMinutes, customSources, true);
+      }
+
+      this.activeSession.set(conflict);
+      if (conflict.status === 'locked') {
+        this.initTimerFromActiveSession();
+      } else {
+        this.remainingSeconds.set(0);
+      }
+      return conflict;
     }
   }
 
@@ -251,56 +269,72 @@ export class SessionService implements OnDestroy {
     }
   }
 
-  private initTimerFromActiveSession(): void {
-    const session = this.activeSession();
-    if (!session) {
-      this.remainingSeconds.set(0);
-      return;
+  private activateLockedSession(session: Session, preferLocalClock = false): Session {
+    this.activeSession.set(session);
+    let remaining = this.remainingFor(session);
+    let origin: number | string = session.startedAt;
+
+    if (remaining <= 0 && preferLocalClock) {
+      remaining = Math.max(1, session.plannedMinutes) * 60;
+      origin = Date.now();
     }
 
-    if (session.status !== 'locked') {
-      this.remainingSeconds.set(0);
-      return;
-    }
-
-    const totalSeconds = session.plannedMinutes * 60;
-    const elapsedSeconds = Math.floor((Date.now() - session.startedAt) / 1000);
-    const remaining = totalSeconds - elapsedSeconds;
-
+    this.remainingSeconds.set(Math.max(0, remaining));
     if (remaining <= 0) {
       void this.persistEnd(session);
     } else {
-      this.remainingSeconds.set(remaining);
-      this.startTimer(session.startedAt, session.plannedMinutes);
+      this.startTimer(origin, session.plannedMinutes);
     }
+    return session;
   }
 
-  private startTimer(startedAt: number, plannedMinutes: number): void {
+  private initTimerFromActiveSession(): void {
+    const session = this.activeSession();
+    if (!session || session.status !== 'locked') {
+      this.stopTimer();
+      this.remainingSeconds.set(0);
+      return;
+    }
+
+    this.activateLockedSession(session);
+  }
+
+  private startTimer(startedAt: number | string, plannedMinutes: number): void {
     this.stopTimer();
     if (!this.isBrowser) return;
 
-    const totalSeconds = plannedMinutes * 60;
+    const origin = toEpochMs(startedAt);
+    const totalSeconds = Math.max(1, plannedMinutes) * 60;
 
-    this.ngZone.runOutsideAngular(() => {
-      this.timerInterval = setInterval(() => {
-        const elapsedSeconds = Math.floor((Date.now() - startedAt) / 1000);
-        const remaining = totalSeconds - elapsedSeconds;
+    const tick = (): void => {
+      const remaining = totalSeconds - Math.floor((Date.now() - origin) / 1000);
 
-        this.ngZone.run(() => {
-          if (remaining <= 0) {
-            const current = this.activeSession();
-            if (current && current.status === 'locked') {
-              void this.persistEnd(current);
-            } else {
-              this.remainingSeconds.set(0);
-              this.stopTimer();
-            }
-          } else {
-            this.remainingSeconds.set(remaining);
-          }
-        });
-      }, 500);
-    });
+      if (remaining <= 0) {
+        const current = this.activeSession();
+        if (current && current.status === 'locked') {
+          void this.persistEnd(current);
+        } else {
+          this.remainingSeconds.set(0);
+          this.stopTimer();
+        }
+        return;
+      }
+
+      this.remainingSeconds.set(remaining);
+    };
+
+    tick();
+    this.timerInterval = setInterval(tick, 250);
+  }
+
+  private remainingFor(session: Session): number {
+    const totalSeconds = Math.max(1, session.plannedMinutes) * 60;
+    const elapsedSeconds = Math.floor((Date.now() - toEpochMs(session.startedAt)) / 1000);
+    return totalSeconds - elapsedSeconds;
+  }
+
+  private hasTimerExpired(session: Session): boolean {
+    return this.remainingFor(session) <= 0;
   }
 
   private stopTimer(): void {
