@@ -270,6 +270,26 @@ export function createSessionRouter(): Router {
     res.json({ session: await attach(updated) });
   });
 
+  /**
+   * Drops an unfinished locked/reflecting session so the learner can start a
+   * fresh Pomodoro. Completed sessions are left alone.
+   */
+  router.post('/:id/cancel', async (req, res) => {
+    const userId = userIdOf(req);
+    const current = await ownedSession(userId, req.params['id'] ?? '');
+    if (!current) {
+      res.status(404).json({ error: 'Session not found.' });
+      return;
+    }
+    if (current.status === 'completed') {
+      res.status(409).json({ error: 'Completed sessions cannot be cancelled.' });
+      return;
+    }
+
+    await getDb().delete(sessions).where(eq(sessions.id, current.id));
+    res.json({ ok: true, id: current.id });
+  });
+
   router.post('/:id/reflection', async (req, res) => {
     const userId = userIdOf(req);
     const current = await ownedSession(userId, req.params['id'] ?? '');

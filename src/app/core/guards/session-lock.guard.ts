@@ -5,8 +5,14 @@ import { SessionService } from '../services/session.service';
 export const lockScreenGuard: CanActivateFn = async () => {
   const sessionService = inject(SessionService);
   const router = inject(Router);
-  await sessionService.whenReady();
-  const session = sessionService.activeSession();
+
+  // If setup just created a locked session, trust it immediately so a late
+  // hydrate cannot bounce the learner back to /session/setup.
+  let session = sessionService.activeSession();
+  if (!session) {
+    await sessionService.whenReady();
+    session = sessionService.activeSession();
+  }
 
   if (!session) {
     return router.createUrlTree(['/session/setup']);
@@ -20,14 +26,22 @@ export const lockScreenGuard: CanActivateFn = async () => {
     return router.createUrlTree(['/session/ai-tutor']);
   }
 
+  if (session.status !== 'locked') {
+    return router.createUrlTree(['/session/setup']);
+  }
+
   return true;
 };
 
 export const reflectionGuard: CanActivateFn = async () => {
   const sessionService = inject(SessionService);
   const router = inject(Router);
-  await sessionService.whenReady();
-  const session = sessionService.activeSession();
+
+  let session = sessionService.activeSession();
+  if (!session) {
+    await sessionService.whenReady();
+    session = sessionService.activeSession();
+  }
 
   if (!session) {
     return router.createUrlTree(['/session/setup']);
@@ -47,8 +61,12 @@ export const reflectionGuard: CanActivateFn = async () => {
 export const aiPanelGuard: CanActivateFn = async () => {
   const sessionService = inject(SessionService);
   const router = inject(Router);
-  await sessionService.whenReady();
-  const session = sessionService.activeSession();
+
+  let session = sessionService.activeSession();
+  if (!session) {
+    await sessionService.whenReady();
+    session = sessionService.activeSession();
+  }
 
   if (session?.status === 'locked') {
     return router.createUrlTree(['/session/lock']);

@@ -105,11 +105,15 @@ export class LockScreenComponent {
   constructor() {
     // Monitor session state for timer completion -> auto transition to reflection
     effect(() => {
-      const status = this.sessionService.status();
+      const session = this.sessionService.activeSession();
+      const status = session?.status;
+      if (!session || status === 'locked') {
+        return;
+      }
       if (status === 'reflecting') {
-        this.router.navigate(['/session/reflect']);
+        void this.router.navigateByUrl('/session/reflect');
       } else if (status === 'completed') {
-        this.router.navigate(['/session/ai-tutor']);
+        void this.router.navigateByUrl('/session/ai-tutor');
       }
     });
   }

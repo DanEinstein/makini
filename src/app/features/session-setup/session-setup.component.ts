@@ -174,11 +174,15 @@ export class SessionSetupComponent {
     this.startError.set('');
     try {
       const session = await this.sessionService.startSession(this.topic(), duration);
-      if (session.status === 'reflecting') {
-        await this.router.navigate(['/session/reflect']);
+      if (session.status !== 'locked') {
+        this.startError.set('Focus timer did not start. Please try again.');
         return;
       }
-      await this.router.navigate(['/session/lock']);
+
+      const opened = await this.router.navigateByUrl('/session/lock');
+      if (!opened) {
+        this.startError.set('Could not open the Pomodoro lock screen. Please try again.');
+      }
     } catch (error) {
       console.error('[makini] Could not start a focus session.', error);
       this.startError.set(this.messageFor(error));
