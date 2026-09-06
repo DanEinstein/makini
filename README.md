@@ -76,6 +76,14 @@ matchers so Clerk can handle its own sub-routes. Browser requests to `/api/*`
 carry the Clerk session JWT via an HTTP interceptor, and the server rejects
 unauthenticated calls with a `401`.
 
+## Topic references (DuckDuckGo)
+
+When you start a focus session, the server searches DuckDuckGo's HTML results
+for the chosen topic and stores up to six learning links on the session. Those
+links appear on the Pomodoro lock screen. AI chat destinations are filtered out.
+No search API key is required. If search fails or returns nothing usable, the
+app falls back to a small static default set (MDN, Scholar, Wikipedia).
+
 ## AI Tutor (Groq)
 
 The AI Tutor runs on Groq from the Express server. The browser never sees the

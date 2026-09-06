@@ -14,7 +14,7 @@ import { ClerkService } from 'ngx-clerk';
 import { firstValueFrom } from 'rxjs';
 import { toEpochMs } from '../../../shared/epoch';
 import { DEFAULT_SOURCES } from '../../../shared/session-defaults';
-import { Session, SessionReflection, SourceLink } from '../models/session.model';
+import { Session, SessionReflection } from '../models/session.model';
 
 export { DEFAULT_SOURCES };
 
@@ -173,7 +173,6 @@ export class SessionService implements OnDestroy {
   async startSession(
     topic: string,
     plannedMinutes: number,
-    customSources?: SourceLink[],
     retried = false
   ): Promise<Session> {
     if (!this.markedReady) {
@@ -182,10 +181,10 @@ export class SessionService implements OnDestroy {
     this.hydrateGen++;
     this.stopTimer();
 
+    // Sources are resolved server-side from the topic (DuckDuckGo + AI denylist).
     const body = {
       topic: topic.trim() || 'Deep Focus Exploration',
-      plannedMinutes: plannedMinutes || 25,
-      sources: customSources && customSources.length > 0 ? customSources : DEFAULT_SOURCES
+      plannedMinutes: plannedMinutes || 25
     };
 
     try {
@@ -204,7 +203,7 @@ export class SessionService implements OnDestroy {
       // (stuck lock or abandoned Feynman reflection) and create the new session.
       if (!retried && (conflict.status === 'locked' || conflict.status === 'reflecting')) {
         await this.cancelSession(conflict);
-        return this.startSession(topic, plannedMinutes, customSources, true);
+        return this.startSession(topic, plannedMinutes, true);
       }
 
       this.activeSession.set(conflict);

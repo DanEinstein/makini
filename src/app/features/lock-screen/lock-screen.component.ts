@@ -57,12 +57,16 @@ import { SourceCardComponent } from '../../shared/components/source-card/source-
           <div class="flex flex-col gap-4">
             <div class="flex items-center justify-between">
               <h2 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Primary Source Links</h2>
-              <span class="font-code-sm text-xs text-on-surface-variant">Validated references</span>
+              <span class="font-code-sm text-xs text-on-surface-variant">Topic references</span>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              @for (source of sessionService.activeSession()?.sources || []; track source.title) {
+              @for (source of sessionService.activeSession()?.sources || []; track source.url) {
                 <app-source-card [source]="source" />
+              } @empty {
+                <p class="sm:col-span-3 text-sm text-on-surface-variant">
+                  No references found for this topic.
+                </p>
               }
             </div>
           </div>
