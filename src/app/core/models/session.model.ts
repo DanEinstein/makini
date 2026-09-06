@@ -32,5 +32,6 @@ export interface Session {
   status: SessionStatus;
   scratchpadNotes: string;
   sources: SourceLink[];
+  sourceSummary?: string;
   reflection?: SessionReflection;
 }

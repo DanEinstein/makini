@@ -6,7 +6,10 @@ import { DEFAULT_SOURCES } from '../shared/session-defaults';
 import { getDb, IS_DATABASE_CONFIGURED } from './db/client';
 import { chatMessages, reflections, sessions } from './db/schema';
 import { ensureUser } from './db/users';
+import { IS_GROQ_CONFIGURED } from './ai.routes';
+import { logUsage } from './db/usage';
 import { toApiSession, type ReflectionRow, type SessionRow } from './serialize';
+import { generateSourceSummary, resolveSourceSummaryGate } from './source-summary';
 import { searchTopicSources } from './topic-sources';
 
 const UUID_RE =
@@ -291,6 +294,62 @@ export function createSessionRouter(): Router {
 
     await getDb().delete(sessions).where(eq(sessions.id, current.id));
     res.json({ ok: true, id: current.id });
+  });
+
+  /**
+   * Independent source-based summary for the Feynman compare pane.
+   * Does not read the learner's reflection text.
+   */
+  router.post('/:id/source-summary', async (req, res) => {
+    const userId = userIdOf(req);
+    const current = await ownedSession(userId, req.params['id'] ?? '');
+    if (!current) {
+      res.status(404).json({ error: 'Session not found.' });
+      return;
+    }
+    const gate = resolveSourceSummaryGate(current.status, current.sourceSummary, IS_GROQ_CONFIGURED);
+    if (gate.action === 'not_ready') {
+      res.status(409).json({ error: 'Finish the focus timer before requesting a source summary.' });
+      return;
+    }
+    if (gate.action === 'cached') {
+      res.json({ summary: current.sourceSummary, cached: true });
+      return;
+    }
+    if (gate.action === 'unconfigured') {
+      res.status(503).json({
+        error: 'AI summary is not configured on the server.',
+        hint: 'Set GROQ_API_KEY, then restart.',
+      });
+      return;
+    }
+
+    try {
+      const generated = await generateSourceSummary(current.topic, current.sources ?? []);
+      const [updated] = await getDb()
+        .update(sessions)
+        .set({ sourceSummary: generated.text })
+        .where(eq(sessions.id, current.id))
+        .returning();
+
+      if (generated.units > 0) {
+        await logUsage(userId, 'groq', generated.units);
+      }
+
+      res.json({
+        summary: updated.sourceSummary ?? generated.text,
+        cached: false,
+        session: await attach(updated),
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      if (message === 'GROQ_NOT_CONFIGURED') {
+        res.status(503).json({ error: 'AI summary is not configured on the server.' });
+        return;
+      }
+      console.error('[makini] Source summary failed.', error);
+      res.status(503).json({ error: 'Unable to summarize the recommended sources.' });
+    }
   });
 
   router.post('/:id/reflection', async (req, res) => {
