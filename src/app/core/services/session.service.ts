@@ -145,9 +145,20 @@ export class SessionService implements OnDestroy {
         return;
       }
 
-      this.activeSession.set(activeRes.session);
+      const incoming = activeRes.session;
+      const local = this.activeSession();
+      // A just-started Pomodoro must not be wiped by a stale hydrate response.
+      if (
+        !incoming &&
+        local &&
+        (local.status === 'locked' || local.status === 'reflecting')
+      ) {
+        this.initTimerFromActiveSession();
+      } else {
+        this.activeSession.set(incoming);
+        this.initTimerFromActiveSession();
+      }
       this.sessionHistory.set(historyRes.sessions ?? []);
-      this.initTimerFromActiveSession();
     } catch (error) {
       console.error('[makini] Failed to load sessions from the server.', error);
     } finally {
@@ -179,15 +190,20 @@ export class SessionService implements OnDestroy {
 
     try {
       const res = await firstValueFrom(this.http.post<SessionResponse>('/api/sessions', body));
-      return this.activateLockedSession(res.session!, true);
+      if (!res.session || res.session.status !== 'locked') {
+        throw new Error('Server did not return a locked focus session.');
+      }
+      return this.activateLockedSession(res.session, true);
     } catch (error) {
       const conflict = this.conflictSession(error);
       if (!conflict) {
         throw error;
       }
 
-      if (!retried && conflict.status === 'locked' && this.hasTimerExpired(conflict)) {
-        await this.persistEnd(conflict);
+      // Starting from setup means "new Pomodoro". Clear any unfinished blocker
+      // (stuck lock or abandoned Feynman reflection) and create the new session.
+      if (!retried && (conflict.status === 'locked' || conflict.status === 'reflecting')) {
+        await this.cancelSession(conflict);
         return this.startSession(topic, plannedMinutes, customSources, true);
       }
 
@@ -198,6 +214,22 @@ export class SessionService implements OnDestroy {
         this.remainingSeconds.set(0);
       }
       return conflict;
+    }
+  }
+
+  /** Removes an unfinished session so a new Pomodoro can start. */
+  async cancelSession(session: Session): Promise<void> {
+    this.stopTimer();
+    try {
+      await firstValueFrom(this.http.post<{ ok: boolean }>(`/api/sessions/${session.id}/cancel`, {}));
+    } catch (error) {
+      console.error('[makini] Failed to cancel unfinished session.', error);
+      throw error;
+    }
+
+    if (this.activeSession()?.id === session.id) {
+      this.activeSession.set(null);
+      this.remainingSeconds.set(0);
     }
   }
 
@@ -331,10 +363,6 @@ export class SessionService implements OnDestroy {
     const totalSeconds = Math.max(1, session.plannedMinutes) * 60;
     const elapsedSeconds = Math.floor((Date.now() - toEpochMs(session.startedAt)) / 1000);
     return totalSeconds - elapsedSeconds;
-  }
-
-  private hasTimerExpired(session: Session): boolean {
-    return this.remainingFor(session) <= 0;
   }
 
   private stopTimer(): void {

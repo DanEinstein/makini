@@ -89,6 +89,43 @@ describe('SessionService', () => {
     expect(service.remainingSeconds()).toBe(25 * 60);
   });
 
+  it('cancels a leftover reflecting session and starts a fresh pomodoro', async () => {
+    const pending = service.startSession('Fresh Pomodoro', 25);
+    await flushMicrotasks();
+
+    httpTesting.expectOne('/api/sessions').flush(
+      {
+        error: 'An active focus session is already in progress.',
+        session: lockedSession({
+          id: '77777777-7777-4777-8777-777777777777',
+          topic: 'Abandoned reflection',
+          status: 'reflecting',
+          plannedMinutes: 25
+        })
+      },
+      { status: 409, statusText: 'Conflict' }
+    );
+
+    await flushMicrotasks();
+    httpTesting
+      .expectOne('/api/sessions/77777777-7777-4777-8777-777777777777/cancel')
+      .flush({ ok: true, id: '77777777-7777-4777-8777-777777777777' });
+
+    await flushMicrotasks();
+    httpTesting.expectOne('/api/sessions').flush({
+      session: lockedSession({
+        id: '88888888-8888-4888-8888-888888888888',
+        topic: 'Fresh Pomodoro',
+        plannedMinutes: 25
+      })
+    });
+
+    const session = await pending;
+    expect(session.topic).toBe('Fresh Pomodoro');
+    expect(session.status).toBe('locked');
+    expect(service.isLocked()).toBe(true);
+  });
+
   it('counts down remaining pomodoro time after a session starts', async () => {
     const now = Date.parse('2026-09-04T16:00:00.000Z');
     vi.useFakeTimers({ toFake: ['setInterval', 'setTimeout', 'Date'] });
