@@ -33,6 +33,7 @@ export function toApiSession(row: SessionRow, reflection?: ReflectionRow | null)
     status: row.status,
     scratchpadNotes: row.scratchpadNotes,
     sources: row.sources,
+    sourceSummary: row.sourceSummary ?? undefined,
     reflection: reflection ? toApiReflection(reflection) : undefined,
   };
 }

@@ -35,14 +35,14 @@ import { ReflectionInputMode, SelfCheckProtocol } from '../../core/models/sessio
               <p class="reflection-accent font-inter text-sm font-semibold mb-1 uppercase tracking-widest">Reflection</p>
               <h2 class="font-display-lg text-headline-lg md:text-display-lg leading-tight font-bold">
                 Timer Complete.<br />
-                <span class="reflection-muted font-semibold">Time to reflect.</span>
+                <span class="reflection-muted font-semibold">Explain, then compare.</span>
               </h2>
             </div>
 
-            <!-- Bento Grid Layout -->
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-              <!-- Left Column: Rich Text Synthesis Editor (8 cols) -->
-              <div class="lg:col-span-8 reflection-card rounded-xl p-6 md:p-8 flex flex-col">
+            <!-- Split compare: Feynman write-up vs source-grounded AI summary -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+              <!-- Left Column: learner explanation -->
+              <div class="reflection-card rounded-xl p-6 md:p-8 flex flex-col">
                 <div class="flex items-center justify-between mb-4">
                   <div>
                     <h3 class="font-headline-md text-headline-md font-semibold">Explain what you learned in your own words</h3>
@@ -134,8 +134,43 @@ import { ReflectionInputMode, SelfCheckProtocol } from '../../core/models/sessio
                 }
               </div>
 
-              <!-- Right Column: Self-Check & Confidence Rating (4 cols) -->
-              <div class="lg:col-span-4 flex flex-col gap-6">
+              <!-- Right Column: AI source summary + unlock controls -->
+              <div class="flex flex-col gap-6">
+                <div class="reflection-card rounded-xl p-6 md:p-8 flex flex-col min-h-[320px]">
+                  <div class="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 class="font-headline-md text-headline-md font-semibold">Source summary</h3>
+                      <p class="text-sm reflection-muted mt-0.5">Independent of your write-up. Compare after you explain.</p>
+                    </div>
+                    <span class="material-symbols-outlined reflection-muted" aria-hidden="true">auto_awesome</span>
+                  </div>
+
+                  @if (summaryLoading()) {
+                    <p class="text-sm reflection-muted font-inter">Reading your sources…</p>
+                  } @else if (summaryError()) {
+                    <p class="text-sm text-error font-inter">{{ summaryError() }}</p>
+                  } @else if (sourceSummary()) {
+                    <div class="text-sm reflection-copy whitespace-pre-wrap leading-relaxed flex-1">{{ sourceSummary() }}</div>
+                  } @else {
+                    <p class="text-sm reflection-muted font-inter">No source summary yet.</p>
+                  }
+
+                  @if (sessionService.activeSession()?.sources?.length) {
+                    <div class="mt-5 pt-4 border-t border-[#e2c3d0]">
+                      <p class="text-xs font-semibold reflection-accent uppercase tracking-wider mb-2">Sources used</p>
+                      <ul class="flex flex-col gap-1.5">
+                        @for (source of sessionService.activeSession()?.sources || []; track source.url) {
+                          <li class="text-xs reflection-muted truncate">
+                            <a [href]="source.url" target="_blank" rel="noopener noreferrer" class="hover:text-[#7a1468]">
+                              {{ source.title }}
+                            </a>
+                          </li>
+                        }
+                      </ul>
+                    </div>
+                  }
+                </div>
+
                 <div class="reflection-card rounded-xl p-6">
                   <h3 class="font-label-md text-label-md reflection-accent uppercase tracking-wider mb-5 font-semibold flex items-center gap-2">
                     <span class="material-symbols-outlined text-[18px]">checklist</span>
@@ -260,6 +295,9 @@ export class ReflectionComponent implements OnDestroy {
   protected recordSeconds = signal(0);
   protected recordError = signal('');
   protected inputMode = signal<ReflectionInputMode>('typed');
+  protected sourceSummary = signal('');
+  protected summaryLoading = signal(false);
+  protected summaryError = signal('');
 
   private mediaRecorder: MediaRecorder | null = null;
   private recordedChunks: Blob[] = [];
@@ -272,6 +310,10 @@ export class ReflectionComponent implements OnDestroy {
     identifyEdgeCases: false,
     teachSomeoneElse: false
   };
+
+  constructor() {
+    void this.loadSourceSummary();
+  }
 
   readonly formattedRecordTime = computed(() => {
     const total = this.recordSeconds();
@@ -481,5 +523,41 @@ export class ReflectionComponent implements OnDestroy {
     });
 
     await this.router.navigate(['/session/ai-tutor']);
+  }
+
+  private async loadSourceSummary(): Promise<void> {
+    const session = this.sessionService.activeSession();
+    if (!session?.id) {
+      return;
+    }
+
+    const cached = session.sourceSummary?.trim();
+    if (cached) {
+      this.sourceSummary.set(cached);
+      return;
+    }
+
+    this.summaryLoading.set(true);
+    this.summaryError.set('');
+    try {
+      const res = await firstValueFrom(
+        this.http.post<{ summary?: string }>(`/api/sessions/${session.id}/source-summary`, {})
+      );
+      const text = res.summary?.trim() ?? '';
+      this.sourceSummary.set(text);
+      if (!text) {
+        this.summaryError.set('The source summary came back empty. You can still write your explanation.');
+      }
+    } catch (error) {
+      const message =
+        error && typeof error === 'object' && 'error' in error
+          ? (error as { error?: { error?: string } }).error?.error
+          : undefined;
+      this.summaryError.set(
+        message || 'Could not load the source summary. Your explanation still unlocks the tutor.'
+      );
+    } finally {
+      this.summaryLoading.set(false);
+    }
   }
 }

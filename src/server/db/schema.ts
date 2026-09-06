@@ -56,6 +56,7 @@ export const sessions = pgTable(
     status: sessionStatus('status').notNull().default('locked'),
     scratchpadNotes: text('scratchpad_notes').notNull().default(''),
     sources: jsonb('sources').$type<StoredSourceLink[]>().notNull().default([]),
+    sourceSummary: text('source_summary'),
   },
   table => [index('sessions_user_started_idx').on(table.userId, table.startedAt)],
 );
