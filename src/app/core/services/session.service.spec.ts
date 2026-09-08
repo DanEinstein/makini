@@ -314,4 +314,65 @@ describe('SessionService', () => {
       'Quantum states collapse under measurement.'
     );
   });
+
+  it('forwards reuseSourcesFromSessionId when relearning the same topic', async () => {
+    const pending = service.startSession('Recursion', 25, {
+      reuseSourcesFrom: '44444444-4444-4444-8444-444444444444'
+    });
+    await flushMicrotasks();
+    const req = httpTesting.expectOne('/api/sessions');
+    expect(req.request.body.reuseSourcesFromSessionId).toBe(
+      '44444444-4444-4444-8444-444444444444'
+    );
+    expect(req.request.body.sources).toBeUndefined();
+    req.flush({
+      session: lockedSession({
+        topic: 'Recursion',
+        plannedMinutes: 25
+      })
+    });
+    await pending;
+  });
+
+  it('posts a completed session to the grade endpoint', async () => {
+    service.reviewSession({
+      id: '44444444-4444-4444-8444-444444444444',
+      topic: 'Superposition',
+      plannedMinutes: 15,
+      startedAt: Date.now(),
+      endedAt: Date.now(),
+      status: 'completed',
+      scratchpadNotes: '',
+      sources: [],
+      reflection: {
+        text: 'Quantum states collapse under measurement.',
+        selfCheck: {
+          explainWithoutNotes: true,
+          identifyEdgeCases: true,
+          teachSomeoneElse: true
+        },
+        confidenceRating: 5,
+        submittedAt: Date.now(),
+        inputMode: 'typed'
+      }
+    });
+
+    const pending = service.gradeReflection('44444444-4444-4444-8444-444444444444');
+    const req = httpTesting.expectOne('/api/sessions/44444444-4444-4444-8444-444444444444/grade');
+    expect(req.request.method).toBe('POST');
+    req.flush({
+      grade: {
+        score: 81,
+        verdict: 'proceed',
+        covered: ['collapse'],
+        missed: [],
+        note: 'Clear.'
+      },
+      summary: 'Measurement collapses the wavefunction.',
+      cached: false
+    });
+    const result = await pending;
+    expect(result.grade.score).toBe(81);
+    expect(service.activeSession()?.reflection?.grade?.score).toBe(81);
+  });
 });

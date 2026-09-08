@@ -14,7 +14,7 @@ import { ClerkService } from 'ngx-clerk';
 import { firstValueFrom } from 'rxjs';
 import { toEpochMs } from '../../../shared/epoch';
 import { DEFAULT_SOURCES } from '../../../shared/session-defaults';
-import { Session, SessionReflection } from '../models/session.model';
+import { Session, SessionReflection, ReflectionGrade } from '../models/session.model';
 
 export { DEFAULT_SOURCES };
 
@@ -28,6 +28,13 @@ interface SessionResponse {
 
 interface SessionListResponse {
   sessions: Session[];
+}
+
+interface GradeResponse {
+  grade: ReflectionGrade;
+  summary?: string;
+  cached?: boolean;
+  session?: Session;
 }
 
 @Injectable({
@@ -173,6 +180,7 @@ export class SessionService implements OnDestroy {
   async startSession(
     topic: string,
     plannedMinutes: number,
+    options: { reuseSourcesFrom?: string } = {},
     retried = false
   ): Promise<Session> {
     if (!this.markedReady) {
@@ -181,11 +189,19 @@ export class SessionService implements OnDestroy {
     this.hydrateGen++;
     this.stopTimer();
 
-    // Sources are resolved server-side from the topic (DuckDuckGo + AI denylist).
-    const body = {
+    // Sources are resolved server-side from the topic (DuckDuckGo + AI denylist),
+    // unless this is a relearn that reuses the prior session's links.
+    const body: {
+      topic: string;
+      plannedMinutes: number;
+      reuseSourcesFromSessionId?: string;
+    } = {
       topic: topic.trim() || 'Deep Focus Exploration',
       plannedMinutes: plannedMinutes || 25
     };
+    if (options.reuseSourcesFrom) {
+      body.reuseSourcesFromSessionId = options.reuseSourcesFrom;
+    }
 
     try {
       const res = await firstValueFrom(this.http.post<SessionResponse>('/api/sessions', body));
@@ -203,7 +219,7 @@ export class SessionService implements OnDestroy {
       // (stuck lock or abandoned Feynman reflection) and create the new session.
       if (!retried && (conflict.status === 'locked' || conflict.status === 'reflecting')) {
         await this.cancelSession(conflict);
-        return this.startSession(topic, plannedMinutes, true);
+        return this.startSession(topic, plannedMinutes, options, true);
       }
 
       this.activeSession.set(conflict);
@@ -267,6 +283,33 @@ export class SessionService implements OnDestroy {
       completed,
       ...this.sessionHistory().filter(session => session.id !== completed.id)
     ]);
+  }
+
+  async gradeReflection(sessionId: string): Promise<{ grade: ReflectionGrade; summary?: string }> {
+    const res = await firstValueFrom(
+      this.http.post<GradeResponse>(`/api/sessions/${sessionId}/grade`, {})
+    );
+    if (!res.grade) {
+      throw new Error('Server did not return a grade.');
+    }
+
+    const current = this.activeSession();
+    if (current && current.id === sessionId) {
+      const updated: Session = {
+        ...current,
+        sourceSummary: res.summary ?? current.sourceSummary,
+        reflection: current.reflection
+          ? { ...current.reflection, grade: res.grade }
+          : current.reflection
+      };
+      this.activeSession.set(updated);
+      this.sessionHistory.set([
+        updated,
+        ...this.sessionHistory().filter(session => session.id !== sessionId)
+      ]);
+    }
+
+    return { grade: res.grade, summary: res.summary };
   }
 
   reviewSession(session: Session): void {

@@ -22,8 +22,9 @@ export function resolveSourceSummaryGate(
   status: SummarySessionStatus,
   existingSummary: string | null | undefined,
   groqConfigured: boolean,
+  hasReflection: boolean,
 ): SourceSummaryGate {
-  if (!canSummarizeStatus(status)) {
+  if (!canSummarizeStatus(status) || !hasReflection) {
     return { action: 'not_ready' };
   }
   if (existingSummary?.trim()) {

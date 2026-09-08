@@ -74,6 +74,14 @@ export const reflections = pgTable('reflections', {
   teachSomeoneElse: boolean('teach_someone_else').notNull().default(false),
   confidenceRating: smallint('confidence_rating').notNull(),
   submittedAt: timestamp('submitted_at', { withTimezone: true }).notNull(),
+  gradeScore: smallint('grade_score'),
+  gradeVerdict: text('grade_verdict'),
+  gradeFeedback: jsonb('grade_feedback').$type<{
+    covered: string[];
+    missed: string[];
+    note: string;
+  }>(),
+  gradedAt: timestamp('graded_at', { withTimezone: true }),
 });
 
 export const chatMessages = pgTable(

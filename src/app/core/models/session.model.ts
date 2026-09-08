@@ -15,12 +15,21 @@ export interface SelfCheckProtocol {
 
 export type ReflectionInputMode = 'typed' | 'spoken';
 
+export interface ReflectionGrade {
+  score: number;
+  verdict: 'relearn' | 'proceed';
+  covered: string[];
+  missed: string[];
+  note: string;
+}
+
 export interface SessionReflection {
   text: string;
   selfCheck: SelfCheckProtocol;
   confidenceRating: number; // 1 - 5
   submittedAt: number;
   inputMode?: ReflectionInputMode;
+  grade?: ReflectionGrade;
 }
 
 export interface Session {
