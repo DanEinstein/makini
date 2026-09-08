@@ -8,7 +8,8 @@ import { chatMessages, reflections, sessions } from './db/schema';
 import { ensureUser } from './db/users';
 import { IS_GROQ_CONFIGURED } from './ai.routes';
 import { logUsage } from './db/usage';
-import { toApiSession, type ReflectionRow, type SessionRow } from './serialize';
+import { toApiGrade, toApiSession, type ReflectionRow, type SessionRow } from './serialize';
+import { gradeReflection, resolveGradeGate } from './reflection-grade';
 import { generateSourceSummary, resolveSourceSummaryGate } from './source-summary';
 import { searchTopicSources } from './topic-sources';
 
@@ -140,7 +141,21 @@ export function createSessionRouter(): Router {
       return;
     }
 
-    const sources = await searchTopicSources(topic);
+    const reuseId =
+      typeof req.body?.reuseSourcesFromSessionId === 'string'
+        ? req.body.reuseSourcesFromSessionId.trim()
+        : '';
+    let sources: SourceLink[];
+    if (reuseId) {
+      const prior = await ownedSession(userId, reuseId);
+      if (!prior) {
+        res.status(404).json({ error: 'Session not found.' });
+        return;
+      }
+      sources = prior.sources?.length ? prior.sources : DEFAULT_SOURCES;
+    } else {
+      sources = await searchTopicSources(topic);
+    }
 
     const [created] = await getDb()
       .insert(sessions)
@@ -298,7 +313,8 @@ export function createSessionRouter(): Router {
 
   /**
    * Independent source-based summary for the Feynman compare pane.
-   * Does not read the learner's reflection text.
+   * Does not read the learner's reflection text, but requires one to exist
+   * so the AI write-up cannot appear before the learner explains.
    */
   router.post('/:id/source-summary', async (req, res) => {
     const userId = userIdOf(req);
@@ -307,9 +323,20 @@ export function createSessionRouter(): Router {
       res.status(404).json({ error: 'Session not found.' });
       return;
     }
-    const gate = resolveSourceSummaryGate(current.status, current.sourceSummary, IS_GROQ_CONFIGURED);
+    const map = await reflectionMap([current.id]);
+    const hasReflection = map.has(current.id);
+    const gate = resolveSourceSummaryGate(
+      current.status,
+      current.sourceSummary,
+      IS_GROQ_CONFIGURED,
+      hasReflection,
+    );
     if (gate.action === 'not_ready') {
-      res.status(409).json({ error: 'Finish the focus timer before requesting a source summary.' });
+      res.status(409).json({
+        error: hasReflection
+          ? 'Finish the focus timer before requesting a source summary.'
+          : 'Submit your own explanation first.',
+      });
       return;
     }
     if (gate.action === 'cached') {
@@ -349,6 +376,116 @@ export function createSessionRouter(): Router {
       }
       console.error('[makini] Source summary failed.', error);
       res.status(503).json({ error: 'Unable to summarize the recommended sources.' });
+    }
+  });
+
+  /**
+   * Grades the learner's Feynman explanation against the source summary.
+   * Generates and persists the summary first if it is still missing.
+   */
+  router.post('/:id/grade', async (req, res) => {
+    const userId = userIdOf(req);
+    const current = await ownedSession(userId, req.params['id'] ?? '');
+    if (!current) {
+      res.status(404).json({ error: 'Session not found.' });
+      return;
+    }
+
+    const map = await reflectionMap([current.id]);
+    const reflection = map.get(current.id) ?? null;
+    const gate = resolveGradeGate(current.status, reflection, IS_GROQ_CONFIGURED);
+
+    if (gate.action === 'not_ready') {
+      res.status(409).json({
+        error: 'Submit your own explanation first.',
+      });
+      return;
+    }
+
+    if (gate.action === 'cached') {
+      const grade = reflection ? toApiGrade(reflection) : undefined;
+      if (!grade) {
+        res.status(503).json({ error: 'Stored grade is incomplete. Try again.' });
+        return;
+      }
+      res.json({
+        grade,
+        summary: current.sourceSummary ?? '',
+        cached: true,
+      });
+      return;
+    }
+
+    if (gate.action === 'unconfigured') {
+      res.status(503).json({
+        error: 'AI summary is not configured on the server.',
+        hint: 'Set GROQ_API_KEY, then restart.',
+      });
+      return;
+    }
+
+    if (!reflection) {
+      res.status(409).json({ error: 'Submit your own explanation first.' });
+      return;
+    }
+
+    try {
+      let summaryText = current.sourceSummary?.trim() ?? '';
+      let usageUnits = 0;
+      let sessionRow = current;
+
+      if (!summaryText) {
+        const generated = await generateSourceSummary(current.topic, current.sources ?? []);
+        usageUnits += generated.units;
+        const [updatedSession] = await getDb()
+          .update(sessions)
+          .set({ sourceSummary: generated.text })
+          .where(eq(sessions.id, current.id))
+          .returning();
+        sessionRow = updatedSession;
+        summaryText = updatedSession.sourceSummary?.trim() || generated.text;
+      }
+
+      const result = await gradeReflection(current.topic, summaryText, reflection.text);
+      usageUnits += result.units;
+
+      const [updatedReflection] = await getDb()
+        .update(reflections)
+        .set({
+          gradeScore: result.grade.score,
+          gradeVerdict: result.grade.verdict,
+          gradeFeedback: {
+            covered: result.grade.covered,
+            missed: result.grade.missed,
+            note: result.grade.note,
+          },
+          gradedAt: new Date(),
+        })
+        .where(eq(reflections.id, reflection.id))
+        .returning();
+
+      if (usageUnits > 0) {
+        await logUsage(userId, 'groq', usageUnits);
+      }
+
+      res.json({
+        grade: toApiGrade(updatedReflection) ?? result.grade,
+        summary: summaryText,
+        cached: false,
+        session: await attach(sessionRow),
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      if (message === 'GROQ_NOT_CONFIGURED') {
+        res.status(503).json({ error: 'AI summary is not configured on the server.' });
+        return;
+      }
+      if (message === 'GRADE_UNPARSEABLE') {
+        res.status(503).json({ error: 'Unable to grade the explanation. Try again.' });
+        return;
+      }
+      console.error('[makini] Reflection grading failed.', error);
+      res.status(503).json({ error: 'Unable to grade the explanation. Try again.' });
     }
   });
 

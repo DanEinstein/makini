@@ -64,6 +64,18 @@ import { Session } from '../../core/models/session.model';
                         ★ {{ session.reflection?.confidenceRating ?? '—' }}/5
                       </span>
                     </div>
+                    @if (session.reflection?.grade; as grade) {
+                      <div class="text-right">
+                        <span class="text-xs text-on-surface-variant font-code-sm block">AI Grade</span>
+                        <span
+                          class="font-bold text-sm"
+                          [class.text-error]="grade.verdict === 'relearn'"
+                          [class.text-secondary]="grade.verdict === 'proceed'"
+                        >
+                          {{ grade.score }}%
+                        </span>
+                      </div>
+                    }
 
                     <button
                       type="button"

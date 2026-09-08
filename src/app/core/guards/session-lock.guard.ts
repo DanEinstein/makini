@@ -44,15 +44,16 @@ export const reflectionGuard: CanActivateFn = async () => {
   }
 
   if (!session) {
+    const latest = sessionService.sessionHistory()[0];
+    if (latest?.status === 'completed' && latest.reflection) {
+      sessionService.reviewSession(latest);
+      return true;
+    }
     return router.createUrlTree(['/session/setup']);
   }
 
   if (session.status === 'locked') {
     return router.createUrlTree(['/session/lock']);
-  }
-
-  if (session.status === 'completed') {
-    return router.createUrlTree(['/session/ai-tutor']);
   }
 
   return true;

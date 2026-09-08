@@ -14,26 +14,34 @@ describe('source-summary', () => {
   });
 
   it('returns 409-equivalent gate while the timer is still running', () => {
-    expect(resolveSourceSummaryGate('locked', null, true)).toEqual({ action: 'not_ready' });
+    expect(resolveSourceSummaryGate('locked', null, true, false)).toEqual({ action: 'not_ready' });
+  });
+
+  it('returns not_ready when the learner has not submitted an explanation', () => {
+    expect(resolveSourceSummaryGate('reflecting', null, true, false)).toEqual({ action: 'not_ready' });
+    expect(resolveSourceSummaryGate('reflecting', 'Already written', true, false)).toEqual({
+      action: 'not_ready',
+    });
   });
 
   it('returns cached summaries without calling Groq', () => {
-    expect(resolveSourceSummaryGate('reflecting', 'Already written', true)).toEqual({
+    expect(resolveSourceSummaryGate('reflecting', 'Already written', true, true)).toEqual({
       action: 'cached',
     });
-    expect(resolveSourceSummaryGate('completed', 'Already written', false)).toEqual({
+    expect(resolveSourceSummaryGate('completed', 'Already written', false, true)).toEqual({
       action: 'cached',
     });
   });
 
   it('returns unconfigured when Groq is missing and nothing is cached', () => {
-    expect(resolveSourceSummaryGate('reflecting', '', false)).toEqual({
+    expect(resolveSourceSummaryGate('reflecting', '', false, true)).toEqual({
       action: 'unconfigured',
     });
   });
 
   it('generates when the session is ready and Groq is configured', () => {
-    expect(resolveSourceSummaryGate('reflecting', null, true)).toEqual({ action: 'generate' });
+    expect(resolveSourceSummaryGate('reflecting', null, true, true)).toEqual({ action: 'generate' });
+    expect(resolveSourceSummaryGate('completed', null, true, true)).toEqual({ action: 'generate' });
   });
 
   it('builds a prompt that includes the topic and sources, not learner notes', () => {
